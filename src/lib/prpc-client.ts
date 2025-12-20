@@ -184,14 +184,16 @@ async function callPRPC<T>(
 export async function fetchPods(): Promise<PNode[]> {
   const now = Date.now();
   
-  // Return cached data if still valid
-  if (cachedPods && now - lastFetchTime < CACHE_TTL) {
-    return cachedPods;
-  }
-
-  // If we're in demo mode, regenerate fresh timestamps each request
+  // IMPORTANT: For demo mode, ALWAYS regenerate fresh data to keep timestamps current
+  // This must come BEFORE the cache check
   if (useDemoData) {
     cachedPods = generateDemoData();
+    lastFetchTime = now;
+    return cachedPods;
+  }
+  
+  // Return cached data if still valid (only for real API data)
+  if (cachedPods && now - lastFetchTime < CACHE_TTL) {
     return cachedPods;
   }
 
