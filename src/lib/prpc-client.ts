@@ -77,14 +77,14 @@ function generateDemoData(): PNode[] {
   
   return nodeConfigs.map((config, i) => {
     const isPremium = config.tier === "premium";
-    const baseUptime = isPremium ? 45 : 20; // Premium nodes have better uptime
-    const uptimeDays = baseUptime + rng.nextInt(0, 30);
-    const isOnline = rng.next() > (isPremium ? 0.05 : 0.2); // Premium has 95% uptime, standard 80%
+    const baseUptime = isPremium ? 45 : 25; // Premium nodes have better uptime
+    const uptimeDays = baseUptime + rng.nextInt(5, 35); // Minimum 5 extra days
+    const isOnline = rng.next() > (isPremium ? 0.05 : 0.12); // Premium 95%, standard 88%
     
-    // Storage varies by tier
-    const storageBase = isPremium ? 500 : 200;
-    const storageCommitted = (storageBase + rng.nextInt(0, 500)) * 1024 * 1024 * 1024;
-    const usagePercent = isPremium ? rng.nextInt(40, 85) : rng.nextInt(20, 70);
+    // Storage varies by tier - always substantial values
+    const storageBase = isPremium ? 600 : 300;
+    const storageCommitted = (storageBase + rng.nextInt(100, 600)) * 1024 * 1024 * 1024;
+    const usagePercent = isPremium ? rng.nextInt(55, 92) : rng.nextInt(35, 78);
     const storageUsed = Math.floor(storageCommitted * (usagePercent / 100));
     
     // Generate consistent pubkey based on node name
@@ -111,7 +111,7 @@ function generateDemoData(): PNode[] {
       storage_committed: storageCommitted,
       storage_used: storageUsed,
       storage_usage_percent: usagePercent,
-      uptime: uptimeDays * 86400 + rng.nextInt(0, 86400),
+      uptime: uptimeDays * 86400 + rng.nextInt(3600, 86400), // At least 1 hour extra
     };
   });
 }
