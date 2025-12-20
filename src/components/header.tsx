@@ -31,7 +31,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 lg:gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20 transition-transform duration-200 group-hover:scale-105">
@@ -48,7 +48,7 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
             {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -56,7 +56,7 @@ export function Header() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                    "flex items-center gap-1.5 lg:gap-2 px-2 lg:px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200",
                     isActive
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
@@ -70,13 +70,13 @@ export function Header() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* External Links */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* External Links - hidden on tablet, shown on desktop */}
           <a
             href="https://xandeum.network"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="hidden lg:flex items-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Xandeum
             <ExternalLink className="h-3 w-3" />
@@ -85,7 +85,7 @@ export function Header() {
             href="https://docs.xandeum.network"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="hidden lg:flex items-center gap-1 px-2 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Docs
             <ExternalLink className="h-3 w-3" />
@@ -94,7 +94,7 @@ export function Header() {
             href="https://github.com/atech-web-solutions/xandeum-analytics"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:flex"
+            className="hidden md:flex"
             aria-label="View source code on GitHub"
           >
             <Button variant="ghost" size="icon" className="h-9 w-9">
