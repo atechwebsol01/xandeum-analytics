@@ -189,8 +189,9 @@ export async function fetchPods(): Promise<PNode[]> {
     return cachedPods;
   }
 
-  // If we're in demo mode, return demo data
-  if (useDemoData && cachedPods) {
+  // If we're in demo mode, regenerate fresh timestamps each request
+  if (useDemoData) {
+    cachedPods = generateDemoData();
     return cachedPods;
   }
 
