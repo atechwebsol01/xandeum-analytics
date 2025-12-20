@@ -84,15 +84,31 @@ export function Footer() {
             <h4 className="font-semibold">Developer</h4>
             <nav className="flex flex-col gap-2 text-sm">
               <a
-                href="https://github.com/atech-web-solutions"
+                href="https://github.com/atechwebsol01"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
               >
-                ATECH WEB SOLUTIONS <ExternalLink className="h-3 w-3" />
+                GitHub <ExternalLink className="h-3 w-3" />
               </a>
               <a
-                href="https://github.com/atech-web-solutions/xandeum-analytics"
+                href="https://x.com/atechwebsol"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              >
+                X (Twitter) <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://t.me/atechwebsol"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              >
+                Telegram <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://github.com/atechwebsol01/xandeum-analytics"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
@@ -108,7 +124,7 @@ export function Footer() {
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <span>&copy; {currentYear}</span>
             <a
-              href="https://github.com/atech-web-solutions"
+              href="https://github.com/atechwebsol01"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-foreground hover:text-violet-600 transition-colors"
@@ -122,21 +138,12 @@ export function Footer() {
           <div className="text-sm text-muted-foreground">
             Powered by{" "}
             <a
-              href="https://nextjs.org"
+              href="https://github.com/atechwebsol01"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
+              className="font-medium hover:text-violet-600 transition-colors"
             >
-              Next.js
-            </a>
-            {" & "}
-            <a
-              href="https://vercel.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              Vercel
+              ATECH WEB SOLUTIONS
             </a>
           </div>
         </div>

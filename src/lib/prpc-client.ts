@@ -77,9 +77,22 @@ function generateDemoData(): PNode[] {
   
   return nodeConfigs.map((config, i) => {
     const isPremium = config.tier === "premium";
-    const baseUptime = isPremium ? 45 : 25; // Premium nodes have better uptime
-    const uptimeDays = baseUptime + rng.nextInt(5, 35); // Minimum 5 extra days
-    const isOnline = rng.next() > (isPremium ? 0.05 : 0.12); // Premium 95%, standard 88%
+    const baseUptime = isPremium ? 45 : 25;
+    const uptimeDays = baseUptime + rng.nextInt(5, 35);
+    
+    // Status distribution: 80% online, 12% warning, 8% offline
+    // Premium nodes: 88% online, 10% warning, 2% offline
+    const statusRoll = rng.next();
+    let status: "online" | "warning" | "offline";
+    if (isPremium) {
+      if (statusRoll < 0.88) status = "online";
+      else if (statusRoll < 0.98) status = "warning";
+      else status = "offline";
+    } else {
+      if (statusRoll < 0.76) status = "online";
+      else if (statusRoll < 0.92) status = "warning";
+      else status = "offline";
+    }
     
     // Storage varies by tier - always substantial values
     const storageBase = isPremium ? 600 : 300;
@@ -87,10 +100,8 @@ function generateDemoData(): PNode[] {
     const usagePercent = isPremium ? rng.nextInt(55, 92) : rng.nextInt(35, 78);
     const storageUsed = Math.floor(storageCommitted * (usagePercent / 100));
     
-    // Generate consistent pubkey based on node name
     const pubkey = generateSeededPubkey(config.name, i);
     
-    // IP addresses based on "region"
     const regionIPs: Record<string, [number, number]> = {
       "us-east": [34, 35], "us-west": [35, 36], "us-central": [104, 105],
       "eu-west": [52, 53], "eu-central": [18, 19], "eu-north": [13, 14], "eu-south": [15, 16],
@@ -99,19 +110,27 @@ function generateDemoData(): PNode[] {
     };
     const [ipBase1, ipBase2] = regionIPs[config.region] || [10, 11];
     
+    // Generate last_seen based on status (matches getStatusColor thresholds)
+    let lastSeenOffset: number;
+    if (status === "online") {
+      lastSeenOffset = rng.nextInt(5, 90); // 5-90 seconds ago (online < 120s)
+    } else if (status === "warning") {
+      lastSeenOffset = rng.nextInt(130, 500); // 130-500 seconds ago (warning: 120-600s)
+    } else {
+      lastSeenOffset = rng.nextInt(700, 1800); // 700-1800 seconds ago (offline > 600s)
+    }
+    
     return {
       pubkey,
       address: `${ipBase1}.${ipBase2}.${rng.nextInt(1, 254)}.${rng.nextInt(1, 254)}:${6000 + i}`,
       rpc_port: 6000 + i,
       version: versions[i % versions.length],
       is_public: isPremium || rng.next() > 0.4,
-      last_seen_timestamp: isOnline 
-        ? now - rng.nextInt(5, 45) // Online: seen 5-45 seconds ago
-        : now - rng.nextInt(600, 3600), // Offline: 10min to 1hr ago
+      last_seen_timestamp: now - lastSeenOffset,
       storage_committed: storageCommitted,
       storage_used: storageUsed,
       storage_usage_percent: usagePercent,
-      uptime: uptimeDays * 86400 + rng.nextInt(3600, 86400), // At least 1 hour extra
+      uptime: uptimeDays * 86400 + rng.nextInt(3600, 86400),
     };
   });
 }

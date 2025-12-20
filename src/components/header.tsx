@@ -91,7 +91,7 @@ export function Header() {
             <ExternalLink className="h-3 w-3" />
           </a>
           <a
-            href="https://github.com/atech-web-solutions/xandeum-analytics"
+            href="https://github.com/atechwebsol01/xandeum-analytics"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:flex"
