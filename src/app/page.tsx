@@ -48,12 +48,12 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="container py-8 px-4 space-y-6">
+    <div className="container py-4 sm:py-6 lg:py-8 px-3 sm:px-4 space-y-4 sm:space-y-6">
       {/* Hero Section */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
               <span className="gradient-text">Xandeum</span> Network Dashboard
             </h1>
             {!isLoading && !isError && <LiveIndicator />}
@@ -131,9 +131,9 @@ export default function DashboardPage() {
       )}
 
       {/* Network Health + Alerts Row */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
         <NetworkHealth stats={stats} isLoading={isLoading} />
-        <div className="lg:col-span-2">
+        <div className="md:col-span-1 lg:col-span-2">
           <NetworkAlerts nodes={nodes} isLoading={isLoading} />
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function DashboardPage() {
       <NetworkStatsGrid stats={stats} isLoading={isLoading} />
 
       {/* Charts Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <VersionChart
           data={stats?.versionDistribution || {}}
           isLoading={isLoading}
@@ -181,11 +181,11 @@ export default function DashboardPage() {
                       href={`/pnodes/${node.pubkey}`}
                       className="block"
                     >
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all hover:scale-[1.01] cursor-pointer">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all hover:scale-[1.01] cursor-pointer">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           <div
                             className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded-full font-bold text-sm transition-transform",
+                              "flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full font-bold text-xs sm:text-sm transition-transform shrink-0",
                               index === 0 &&
                                 "bg-yellow-500/10 text-yellow-500 ring-2 ring-yellow-500/20",
                               index === 1 &&
@@ -197,16 +197,16 @@ export default function DashboardPage() {
                           >
                             {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
                           </div>
-                          <div>
-                            <code className="text-sm font-mono">
-                              {node.pubkey.slice(0, 8)}...{node.pubkey.slice(-4)}
+                          <div className="min-w-0">
+                            <code className="text-xs sm:text-sm font-mono truncate block">
+                              {node.pubkey.slice(0, 6)}...{node.pubkey.slice(-4)}
                             </code>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
                               v{node.version} • {node.is_public ? "Public" : "Private"}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                           <Badge
                             variant={
                               node.status === "online"
@@ -215,13 +215,13 @@ export default function DashboardPage() {
                                 ? "warning"
                                 : "error"
                             }
-                            className="hidden sm:flex"
+                            className="hidden md:flex text-[10px] sm:text-xs"
                           >
                             {node.status}
                           </Badge>
                           <div
                             className={cn(
-                              "flex h-10 w-10 items-center justify-center rounded-lg font-bold text-sm",
+                              "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg font-bold text-xs sm:text-sm",
                               node.xScore >= 80
                                 ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
                                 : node.xScore >= 60
