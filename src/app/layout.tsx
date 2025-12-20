@@ -6,6 +6,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -109,6 +110,7 @@ export default function RootLayout({
                 </main>
                 <Footer />
               </div>
+              <KeyboardShortcuts />
               <Toaster
                 position="bottom-right"
                 toastOptions={{

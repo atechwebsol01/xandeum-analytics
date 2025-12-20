@@ -21,38 +21,113 @@ let cachedPods: PNode[] | null = null;
 let lastFetchTime = 0;
 let useDemoData = false;
 
-// Demo data for when real endpoints are unavailable
+// Seeded random number generator for consistent demo data
+class SeededRandom {
+  private seed: number;
+  
+  constructor(seed: number) {
+    this.seed = seed;
+  }
+  
+  next(): number {
+    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
+    return this.seed / 0x7fffffff;
+  }
+  
+  nextInt(min: number, max: number): number {
+    return Math.floor(this.next() * (max - min + 1)) + min;
+  }
+}
+
+// Demo data - stable and consistent across requests
 // This ensures the app is always functional for demonstration
 function generateDemoData(): PNode[] {
   const now = Math.floor(Date.now() / 1000);
-  const versions = ["1.2.0", "1.1.9", "1.1.8", "1.1.7"];
+  const versions = ["1.2.0", "1.1.9", "1.1.8", "1.1.7", "1.1.6"];
+  const rng = new SeededRandom(42); // Fixed seed for consistency
   
-  return Array.from({ length: 25 }, (_, i) => {
-    const isOnline = Math.random() > 0.15;
-    const uptimeDays = Math.floor(Math.random() * 60) + 1;
-    const storageCommitted = (Math.floor(Math.random() * 900) + 100) * 1024 * 1024 * 1024; // 100GB - 1TB
-    const storageUsed = Math.floor(storageCommitted * (Math.random() * 0.8 + 0.1));
+  // Pre-defined node configurations for realistic demo
+  const nodeConfigs = [
+    { name: "alpha", region: "us-east", tier: "premium" },
+    { name: "beta", region: "eu-west", tier: "standard" },
+    { name: "gamma", region: "asia-pacific", tier: "premium" },
+    { name: "delta", region: "us-west", tier: "standard" },
+    { name: "epsilon", region: "eu-central", tier: "premium" },
+    { name: "zeta", region: "sa-east", tier: "standard" },
+    { name: "eta", region: "us-central", tier: "premium" },
+    { name: "theta", region: "eu-north", tier: "standard" },
+    { name: "iota", region: "asia-south", tier: "premium" },
+    { name: "kappa", region: "oceania", tier: "standard" },
+    { name: "lambda", region: "us-east", tier: "premium" },
+    { name: "mu", region: "eu-west", tier: "standard" },
+    { name: "nu", region: "asia-east", tier: "premium" },
+    { name: "xi", region: "africa", tier: "standard" },
+    { name: "omicron", region: "us-west", tier: "premium" },
+    { name: "pi", region: "eu-south", tier: "standard" },
+    { name: "rho", region: "middle-east", tier: "premium" },
+    { name: "sigma", region: "us-central", tier: "standard" },
+    { name: "tau", region: "eu-central", tier: "premium" },
+    { name: "upsilon", region: "asia-pacific", tier: "standard" },
+    { name: "phi", region: "us-east", tier: "premium" },
+    { name: "chi", region: "eu-west", tier: "standard" },
+    { name: "psi", region: "asia-south", tier: "premium" },
+    { name: "omega", region: "oceania", tier: "standard" },
+    { name: "prime", region: "us-west", tier: "premium" },
+  ];
+  
+  return nodeConfigs.map((config, i) => {
+    const isPremium = config.tier === "premium";
+    const baseUptime = isPremium ? 45 : 20; // Premium nodes have better uptime
+    const uptimeDays = baseUptime + rng.nextInt(0, 30);
+    const isOnline = rng.next() > (isPremium ? 0.05 : 0.2); // Premium has 95% uptime, standard 80%
+    
+    // Storage varies by tier
+    const storageBase = isPremium ? 500 : 200;
+    const storageCommitted = (storageBase + rng.nextInt(0, 500)) * 1024 * 1024 * 1024;
+    const usagePercent = isPremium ? rng.nextInt(40, 85) : rng.nextInt(20, 70);
+    const storageUsed = Math.floor(storageCommitted * (usagePercent / 100));
+    
+    // Generate consistent pubkey based on node name
+    const pubkey = generateSeededPubkey(config.name, i);
+    
+    // IP addresses based on "region"
+    const regionIPs: Record<string, [number, number]> = {
+      "us-east": [34, 35], "us-west": [35, 36], "us-central": [104, 105],
+      "eu-west": [52, 53], "eu-central": [18, 19], "eu-north": [13, 14], "eu-south": [15, 16],
+      "asia-pacific": [54, 55], "asia-south": [65, 66], "asia-east": [47, 48],
+      "oceania": [13, 14], "sa-east": [18, 19], "africa": [41, 42], "middle-east": [157, 158],
+    };
+    const [ipBase1, ipBase2] = regionIPs[config.region] || [10, 11];
     
     return {
-      pubkey: `${generatePubkey()}`,
-      address: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}:${6000 + i}`,
+      pubkey,
+      address: `${ipBase1}.${ipBase2}.${rng.nextInt(1, 254)}.${rng.nextInt(1, 254)}:${6000 + i}`,
       rpc_port: 6000 + i,
-      version: versions[Math.floor(Math.random() * versions.length)],
-      is_public: Math.random() > 0.3,
-      last_seen_timestamp: isOnline ? now - Math.floor(Math.random() * 60) : now - Math.floor(Math.random() * 3600),
+      version: versions[i % versions.length],
+      is_public: isPremium || rng.next() > 0.4,
+      last_seen_timestamp: isOnline 
+        ? now - rng.nextInt(5, 45) // Online: seen 5-45 seconds ago
+        : now - rng.nextInt(600, 3600), // Offline: 10min to 1hr ago
       storage_committed: storageCommitted,
       storage_used: storageUsed,
-      storage_usage_percent: (storageUsed / storageCommitted) * 100,
-      uptime: uptimeDays * 86400 + Math.floor(Math.random() * 86400),
+      storage_usage_percent: usagePercent,
+      uptime: uptimeDays * 86400 + rng.nextInt(0, 86400),
     };
   });
 }
 
-function generatePubkey(): string {
+function generateSeededPubkey(seed: string, index: number): string {
   const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  let hash = index * 31;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash = hash & hash;
+  }
+  
   let result = "";
   for (let i = 0; i < 44; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    hash = (hash * 1103515245 + 12345) & 0x7fffffff;
+    result += chars.charAt(hash % chars.length);
   }
   return result;
 }

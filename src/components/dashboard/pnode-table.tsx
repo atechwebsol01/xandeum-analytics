@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   ArrowUpDown,
   ArrowUp,
@@ -121,6 +122,9 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
   const handleCopyPubkey = async (pubkey: string) => {
     await navigator.clipboard.writeText(pubkey);
     setCopiedPubkey(pubkey);
+    toast.success("Copied to clipboard!", {
+      description: `${pubkey.slice(0, 12)}...${pubkey.slice(-8)}`,
+    });
     setTimeout(() => setCopiedPubkey(null), 2000);
   };
 
