@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchPods } from "@/lib/prpc-client";
+import { fetchPods, isUsingDemoData } from "@/lib/prpc-client";
 import { calculateXScore, getStatusColor } from "@/lib/utils";
 import type { PNode, PNodeWithScore, NetworkStats } from "@/types/pnode";
 
@@ -70,6 +70,7 @@ export async function GET() {
         nodes: processedNodes,
         stats,
         timestamp: Date.now(),
+        isDemo: isUsingDemoData(),
       },
     });
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw, AlertCircle, TrendingUp } from "lucide-react";
+import { RefreshCw, AlertCircle, TrendingUp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const nodes = data?.success ? data.data.nodes : [];
   const stats = data?.success ? data.data.stats : null;
   const apiError = data?.success === false ? data?.error : null;
+  const isDemo = data?.success ? data.data.isDemo : false;
 
   return (
     <div className="container py-8 px-4 space-y-8">
@@ -51,6 +52,24 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Demo Mode Banner */}
+      {isDemo && !isError && (
+        <Card className="border-blue-500/50 bg-blue-500/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <Info className="h-5 w-5 text-blue-500" />
+            <div className="flex-1">
+              <p className="font-medium text-blue-500">
+                Demo Mode Active
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Showing simulated data. Real pRPC endpoints are currently unreachable. 
+                The app is fully functional for demonstration purposes.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Error State */}
       {(isError || apiError) && (

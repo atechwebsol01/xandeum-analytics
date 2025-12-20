@@ -24,8 +24,21 @@ export const metadata: Metadata = {
     "Dashboard",
     "Network",
     "Monitoring",
+    "ATECH WEB SOLUTIONS",
   ],
-  authors: [{ name: "Xandeum Analytics" }],
+  authors: [{ name: "ATECH WEB SOLUTIONS" }],
+  creator: "ATECH WEB SOLUTIONS",
+  publisher: "ATECH WEB SOLUTIONS",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://xandeum-analytics.vercel.app"
+  ),
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/favicon.svg" }],
+  },
   openGraph: {
     title: "Xandeum Analytics | pNode Network Dashboard",
     description:
@@ -33,16 +46,36 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName: "Xandeum Analytics",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Xandeum Analytics Dashboard",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Xandeum Analytics | pNode Network Dashboard",
     description:
       "Professional analytics platform for Xandeum pNodes. Monitor network health and track performance.",
+    images: ["/og-image.png"],
+    creator: "@atechwebsolutions",
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "your-google-verification-code",
   },
 };
 
@@ -63,8 +96,17 @@ export default function RootLayout({
           <QueryProvider>
             <TooltipProvider delayDuration={0}>
               <div className="relative min-h-screen flex flex-col">
+                {/* Skip to main content link for accessibility */}
+                <a
+                  href="#main-content"
+                  className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:outline-none"
+                >
+                  Skip to main content
+                </a>
                 <Header />
-                <main className="flex-1">{children}</main>
+                <main id="main-content" className="flex-1" tabIndex={-1}>
+                  {children}
+                </main>
                 <Footer />
               </div>
               <Toaster

@@ -9,6 +9,7 @@ interface PNodesSuccessResponse {
     nodes: PNodeWithScore[];
     stats: NetworkStats;
     timestamp: number;
+    isDemo?: boolean;
   };
 }
 

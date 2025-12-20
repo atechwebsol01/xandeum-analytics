@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowUpDown,
@@ -124,16 +124,19 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
     setTimeout(() => setCopiedPubkey(null), 2000);
   };
 
-  const SortIcon = ({ column }: { column: keyof PNodeWithScore }) => {
-    if (sortConfig.key !== column) {
-      return <ArrowUpDown className="h-4 w-4 opacity-50" />;
-    }
-    return sortConfig.direction === "asc" ? (
-      <ArrowUp className="h-4 w-4" />
-    ) : (
-      <ArrowDown className="h-4 w-4" />
-    );
-  };
+  const renderSortIcon = useCallback(
+    (column: keyof PNodeWithScore) => {
+      if (sortConfig.key !== column) {
+        return <ArrowUpDown className="h-4 w-4 opacity-50" />;
+      }
+      return sortConfig.direction === "asc" ? (
+        <ArrowUp className="h-4 w-4" />
+      ) : (
+        <ArrowDown className="h-4 w-4" />
+      );
+    },
+    [sortConfig.key, sortConfig.direction]
+  );
 
   if (isLoading) {
     return (
@@ -240,68 +243,71 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto" role="region" aria-label="pNodes data table" tabIndex={0}>
+          <table className="w-full" aria-describedby="table-description">
+            <caption id="table-description" className="sr-only">
+              List of pNodes in the Xandeum network with their status, scores, and performance metrics
+            </caption>
             <thead>
               <tr className="border-b">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort("xScore")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Score
-                    <SortIcon column="xScore" />
+                    {renderSortIcon("xScore")}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   Status
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort("pubkey")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Pubkey
-                    <SortIcon column="pubkey" />
+                    {renderSortIcon("pubkey")}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort("version")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Version
-                    <SortIcon column="version" />
+                    {renderSortIcon("version")}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort("storage_usage_percent")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Storage
-                    <SortIcon column="storage_usage_percent" />
+                    {renderSortIcon("storage_usage_percent")}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort("uptime")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Uptime
-                    <SortIcon column="uptime" />
+                    {renderSortIcon("uptime")}
                   </button>
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
                     onClick={() => handleSort("last_seen_timestamp")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Last Seen
-                    <SortIcon column="last_seen_timestamp" />
+                    {renderSortIcon("last_seen_timestamp")}
                   </button>
                 </th>
-                <th className="text-right py-3 px-4 font-medium text-muted-foreground">
+                <th scope="col" className="text-right py-3 px-4 font-medium text-muted-foreground">
                   Actions
                 </th>
               </tr>

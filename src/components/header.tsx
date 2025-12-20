@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Menu,
   X,
+  Info,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "pNodes", href: "/pnodes", icon: Server },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "About", href: "/about", icon: Info },
 ];
 
 export function Header() {
@@ -89,13 +91,15 @@ export function Header() {
             <ExternalLink className="h-3 w-3" />
           </a>
           <a
-            href="https://github.com"
+            href="https://github.com/atech-web-solutions/xandeum-analytics"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:flex"
+            aria-label="View source code on GitHub"
           >
             <Button variant="ghost" size="icon" className="h-9 w-9">
               <Github className="h-4 w-4" />
+              <span className="sr-only">GitHub Repository</span>
             </Button>
           </a>
 
@@ -107,11 +111,14 @@ export function Header() {
             size="icon"
             className="md:hidden h-9 w-9"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             ) : (
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5" aria-hidden="true" />
             )}
           </Button>
         </div>
@@ -119,7 +126,12 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t bg-background/95 backdrop-blur-lg">
+        <div
+          id="mobile-menu"
+          role="navigation"
+          aria-label="Mobile navigation"
+          className="md:hidden border-t bg-background/95 backdrop-blur-lg"
+        >
           <nav className="container px-4 py-4 flex flex-col gap-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href;

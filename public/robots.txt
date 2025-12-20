@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://xandeum-analytics.vercel.app/sitemap.xml
+
+# Disallow API routes from indexing
+Disallow: /api/
