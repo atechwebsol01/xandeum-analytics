@@ -12,6 +12,7 @@ import {
   Copy,
   Check,
   Filter,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,14 +32,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StatusBadge } from "./status-badge";
-import { XScoreBadge } from "./x-score-badge";
 import {
   cn,
   formatBytes,
   formatUptime,
   timeAgo,
   truncateAddress,
+  formatCredits,
 } from "@/lib/utils";
+import { exportToCSV, exportToJSON } from "@/lib/export";
 import type { PNodeWithScore, SortConfig, FilterConfig } from "@/types/pnode";
 
 interface PNodeTableProps {
@@ -48,7 +50,7 @@ interface PNodeTableProps {
 
 export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "xScore",
+    key: "credits",
     direction: "desc",
   });
   const [filters, setFilters] = useState<FilterConfig>({
@@ -172,6 +174,26 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
             pNodes
             <Badge variant="secondary">{filteredAndSortedNodes.length}</Badge>
           </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToCSV(filteredAndSortedNodes)}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportToJSON(filteredAndSortedNodes)}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              JSON
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -256,11 +278,11 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
               <tr className="border-b">
                 <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
-                    onClick={() => handleSort("xScore")}
+                    onClick={() => handleSort("credits")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
-                    Score
-                    {renderSortIcon("xScore")}
+                    Credits
+                    {renderSortIcon("credits")}
                   </button>
                 </th>
                 <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -286,11 +308,11 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
                 </th>
                 <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
-                    onClick={() => handleSort("storage_usage_percent")}
+                    onClick={() => handleSort("storage_committed")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
                     Storage
-                    {renderSortIcon("storage_usage_percent")}
+                    {renderSortIcon("storage_committed")}
                   </button>
                 </th>
                 <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -333,7 +355,22 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
                     className="border-b hover:bg-muted/50 transition-colors"
                   >
                     <td className="py-4 px-4">
-                      <XScoreBadge score={node.xScore} />
+                      <div
+                        className={cn(
+                          "inline-flex items-center px-2.5 py-1 rounded-md font-semibold text-sm",
+                          node.credits >= 40000
+                            ? "bg-emerald-500/10 text-emerald-500"
+                            : node.credits >= 20000
+                            ? "bg-blue-500/10 text-blue-500"
+                            : node.credits >= 10000
+                            ? "bg-yellow-500/10 text-yellow-500"
+                            : node.credits >= 1000
+                            ? "bg-orange-500/10 text-orange-500"
+                            : "bg-red-500/10 text-red-500"
+                        )}
+                      >
+                        {formatCredits(node.credits)}
+                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <StatusBadge status={node.status} size="sm" />

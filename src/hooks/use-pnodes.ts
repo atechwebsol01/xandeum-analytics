@@ -47,19 +47,31 @@ function parseAddress(address: string): { ip: string; port: number } {
 }
 
 function processPNodes(pods: PNode[], credits: Map<string, number>): PNodeWithScore[] {
-  return pods.map((pod) => {
-    const { ip, port } = parseAddress(pod.address);
-    const podCredits = credits.get(pod.pubkey) || 0;
-    
-    return {
-      ...pod,
-      xScore: calculateXScore(pod, podCredits),
-      status: getStatusColor(pod.last_seen_timestamp),
-      credits: podCredits,
-      ip,
-      port,
-    };
-  });
+  return pods
+    .filter((pod) => pod && pod.pubkey) // Filter out invalid pods
+    .map((pod) => {
+      const { ip, port } = parseAddress(pod.address || "");
+      const podCredits = credits.get(pod.pubkey) || 0;
+      
+      return {
+        ...pod,
+        pubkey: pod.pubkey || "Unknown",
+        address: pod.address || "unknown:0",
+        version: pod.version || "unknown",
+        uptime: pod.uptime || 0,
+        storage_committed: pod.storage_committed || 0,
+        storage_used: pod.storage_used || 0,
+        storage_usage_percent: pod.storage_usage_percent || 0,
+        is_public: pod.is_public ?? false,
+        rpc_port: pod.rpc_port || 6000,
+        last_seen_timestamp: pod.last_seen_timestamp || Math.floor(Date.now() / 1000),
+        xScore: calculateXScore(pod, podCredits),
+        status: getStatusColor(pod.last_seen_timestamp || 0),
+        credits: podCredits,
+        ip,
+        port,
+      };
+    });
 }
 
 function calculateNetworkStats(nodes: PNodeWithScore[]): NetworkStats {

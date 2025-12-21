@@ -32,10 +32,12 @@ export function QuickStats({ stats, nodes, isLoading }: QuickStatsProps) {
     );
   }
 
-  const onlineRate = Math.round((stats.onlineNodes / stats.totalNodes) * 100);
-  const storageUsedPercent = Math.round(
-    (stats.totalStorageUsed / stats.totalStorageCommitted) * 100
-  );
+  const onlineRate = stats.totalNodes > 0 
+    ? Math.round((stats.onlineNodes / stats.totalNodes) * 100) 
+    : 0;
+  const storageUsedPercent = stats.totalStorageCommitted > 0 
+    ? Math.round((stats.totalStorageUsed / stats.totalStorageCommitted) * 100) 
+    : 0;
   const offlineCount = stats.totalNodes - stats.onlineNodes;
   const highPerformers = nodes.filter(n => n.xScore >= 80).length;
 

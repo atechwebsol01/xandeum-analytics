@@ -10,9 +10,9 @@ import {
   Server,
   HardDrive,
   Clock,
-  Activity,
   Globe,
   RefreshCw,
+  Coins,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/dashboard/status-badge";
-import { XScoreBadge } from "@/components/dashboard/x-score-badge";
 import { usePNode } from "@/hooks/use-pnodes";
 import {
   cn,
@@ -35,6 +34,8 @@ import {
   formatUptime,
   formatTimestamp,
   timeAgo,
+  formatCredits,
+  getCreditsLevel,
 } from "@/lib/utils";
 
 export default function PNodeDetailPage({
@@ -206,29 +207,43 @@ export default function PNodeDetailPage({
           </CardContent>
         </Card>
 
-        {/* Score Card */}
+        {/* Credits & Performance Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Performance
+              <Coins className="h-5 w-5 text-yellow-500" />
+              Pod Credits
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col items-center gap-4">
-              <XScoreBadge score={node.xScore} size="lg" showTooltip={false} />
+              <div
+                className={cn(
+                  "flex h-20 w-20 items-center justify-center rounded-2xl font-bold text-2xl",
+                  node.credits >= 40000
+                    ? "bg-emerald-500/10 text-emerald-500 ring-2 ring-emerald-500/20"
+                    : node.credits >= 20000
+                    ? "bg-blue-500/10 text-blue-500 ring-2 ring-blue-500/20"
+                    : node.credits >= 10000
+                    ? "bg-yellow-500/10 text-yellow-500 ring-2 ring-yellow-500/20"
+                    : "bg-orange-500/10 text-orange-500 ring-2 ring-orange-500/20"
+                )}
+              >
+                {formatCredits(node.credits)}
+              </div>
               <div className="text-center">
-                <p className="text-2xl font-bold">X-Score</p>
+                <p className="text-xl font-bold">Official Credits</p>
                 <p className="text-sm text-muted-foreground">
-                  {node.xScore >= 80 && "Excellent"}
-                  {node.xScore >= 60 && node.xScore < 80 && "Good"}
-                  {node.xScore >= 40 && node.xScore < 60 && "Moderate"}
-                  {node.xScore < 40 && "Needs Improvement"}
+                  {getCreditsLevel(node.credits)} Reputation
                 </p>
               </div>
             </div>
 
             <div className="space-y-3 pt-4 border-t">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">X-Score</span>
+                <span className="font-semibold">{node.xScore}/100</span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Last Seen</span>
                 <span>{timeAgo(node.last_seen_timestamp)}</span>

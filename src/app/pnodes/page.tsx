@@ -4,6 +4,7 @@ import { RefreshCw, Download, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PNodeTable } from "@/components/dashboard/pnode-table";
+import { NodeComparison } from "@/components/dashboard/node-comparison";
 import { usePNodes } from "@/hooks/use-pnodes";
 import { cn, timeAgo } from "@/lib/utils";
 
@@ -118,6 +119,11 @@ export default function PNodesPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Node Comparison Tool */}
+      {!isLoading && nodes.length > 0 && (
+        <NodeComparison nodes={nodes} />
       )}
 
       {/* pNode Table */}

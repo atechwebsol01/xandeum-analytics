@@ -15,9 +15,11 @@ function calculateHealthScore(stats: NetworkStats): number {
   if (!stats || stats.totalNodes === 0) return 0;
   
   // Weight factors for health calculation
-  const onlineRatio = stats.onlineNodes / stats.totalNodes;
+  const onlineRatio = stats.totalNodes > 0 ? stats.onlineNodes / stats.totalNodes : 0;
   const avgScoreNormalized = stats.averageXScore / 100;
-  const storageUtilization = stats.totalStorageUsed / stats.totalStorageCommitted;
+  const storageUtilization = stats.totalStorageCommitted > 0 
+    ? stats.totalStorageUsed / stats.totalStorageCommitted 
+    : 0;
   
   // Optimal storage utilization is between 40-80%
   const storageScore = storageUtilization >= 0.4 && storageUtilization <= 0.8 
@@ -218,7 +220,7 @@ export function NetworkHealth({ stats, isLoading }: NetworkHealthProps) {
                 <div className="flex items-center justify-center gap-1">
                   <Zap className="h-3 w-3 text-emerald-500" />
                   <span className="text-lg font-bold">
-                    {Math.round((stats.onlineNodes / stats.totalNodes) * 100)}%
+                    {stats.totalNodes > 0 ? Math.round((stats.onlineNodes / stats.totalNodes) * 100) : 0}%
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">Uptime</span>

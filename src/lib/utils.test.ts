@@ -54,6 +54,18 @@ describe("formatBytes", () => {
   it("respects decimal places", () => {
     expect(formatBytes(1536, 1)).toBe("1.5 KB");
   });
+
+  it("handles negative values", () => {
+    expect(formatBytes(-100)).toBe("0 Bytes");
+  });
+
+  it("handles NaN", () => {
+    expect(formatBytes(NaN)).toBe("0 Bytes");
+  });
+
+  it("handles Infinity", () => {
+    expect(formatBytes(Infinity)).toBe("0 Bytes");
+  });
 });
 
 describe("formatUptime", () => {
@@ -123,6 +135,18 @@ describe("truncateAddress", () => {
     const address = "0x1234";
     expect(truncateAddress(address, 8)).toBe("0x1234");
   });
+
+  it("handles null address", () => {
+    expect(truncateAddress(null)).toBe("Unknown");
+  });
+
+  it("handles undefined address", () => {
+    expect(truncateAddress(undefined)).toBe("Unknown");
+  });
+
+  it("handles empty string", () => {
+    expect(truncateAddress("")).toBe("Unknown");
+  });
 });
 
 describe("calculateXScore", () => {
@@ -135,15 +159,16 @@ describe("calculateXScore", () => {
     vi.useRealTimers();
   });
 
-  it("calculates score for a high-performing node", () => {
+  it("calculates score for a high-performing node with credits", () => {
     const node = {
       uptime: 2592000, // 30 days
       storage_usage_percent: 80,
       is_public: true,
       last_seen_timestamp: Math.floor(Date.now() / 1000) - 30,
     };
-    const score = calculateXScore(node);
-    expect(score).toBeGreaterThanOrEqual(80);
+    // With high credits (45000), should get high score
+    const score = calculateXScore(node, 45000);
+    expect(score).toBeGreaterThanOrEqual(75);
   });
 
   it("calculates score for a low-performing node", () => {
@@ -153,8 +178,9 @@ describe("calculateXScore", () => {
       is_public: false,
       last_seen_timestamp: Math.floor(Date.now() / 1000) - 7200,
     };
-    const score = calculateXScore(node);
-    expect(score).toBeLessThan(50);
+    // With no credits, should get low score
+    const score = calculateXScore(node, 0);
+    expect(score).toBeLessThan(40);
   });
 
   it("caps score at 100", () => {
@@ -164,7 +190,8 @@ describe("calculateXScore", () => {
       is_public: true,
       last_seen_timestamp: Math.floor(Date.now() / 1000),
     };
-    const score = calculateXScore(node);
+    // Even with very high credits
+    const score = calculateXScore(node, 100000);
     expect(score).toBeLessThanOrEqual(100);
   });
 });

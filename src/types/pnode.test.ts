@@ -40,29 +40,41 @@ describe("PNode Types", () => {
       uptime: 86400,
       xScore: 85,
       status: "online",
+      credits: 45000,
+      ip: "10.0.0.1",
+      port: 8000,
     };
 
     expect(pnodeWithScore.xScore).toBe(85);
     expect(pnodeWithScore.status).toBe("online");
+    expect(pnodeWithScore.credits).toBe(45000);
   });
 
   it("NetworkStats type has correct shape", () => {
     const stats: NetworkStats = {
       totalNodes: 100,
       onlineNodes: 95,
+      warningNodes: 3,
+      offlineNodes: 2,
+      publicNodes: 60,
+      privateNodes: 40,
       totalStorageCommitted: 1000000000000,
       totalStorageUsed: 500000000000,
       averageUptime: 86400,
       averageXScore: 75,
+      totalCredits: 4500000,
+      averageCredits: 45000,
       versionDistribution: {
         "1.0.0": 50,
         "1.1.0": 45,
         "0.9.0": 5,
       },
+      countryDistribution: {},
     };
 
     expect(stats.totalNodes).toBe(100);
     expect(stats.versionDistribution["1.0.0"]).toBe(50);
+    expect(stats.totalCredits).toBe(4500000);
   });
 
   it("SortConfig type has correct shape", () => {
