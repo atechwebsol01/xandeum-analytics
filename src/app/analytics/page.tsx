@@ -9,18 +9,6 @@ import {
   Activity,
   Calendar,
 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-  Cell,
-} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,14 +17,63 @@ import { usePNodes } from "@/hooks/use-pnodes";
 import { cn, timeAgo, formatBytes } from "@/lib/utils";
 
 const COLORS = [
-  "#8b5cf6",
-  "#6366f1",
-  "#3b82f6",
-  "#06b6d4",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
+  "bg-violet-500",
+  "bg-indigo-500",
+  "bg-blue-500",
+  "bg-cyan-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-red-500",
 ];
+
+// Simple bar chart component using CSS
+function SimpleBarChart({ 
+  data, 
+  dataKey, 
+  valueKey,
+  isLoading 
+}: { 
+  data: Array<Record<string, string | number>>;
+  dataKey: string;
+  valueKey: string;
+  isLoading: boolean;
+}) {
+  if (isLoading || data.length === 0) {
+    return <Skeleton className="h-[300px] w-full" />;
+  }
+
+  const maxValue = Math.max(...data.map(d => Number(d[valueKey]) || 0));
+  const total = data.reduce((sum, d) => sum + (Number(d[valueKey]) || 0), 0);
+
+  return (
+    <div className="space-y-3">
+      {data.map((item, index) => {
+        const value = Number(item[valueKey]) || 0;
+        const percent = maxValue > 0 ? (value / maxValue) * 100 : 0;
+        const totalPercent = total > 0 ? (value / total) * 100 : 0;
+        return (
+          <div key={String(item[dataKey])} className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">{String(item[dataKey])}</span>
+              <span className="text-muted-foreground">
+                {value} ({totalPercent.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="h-8 w-full rounded bg-muted overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded transition-all duration-500",
+                  COLORS[index % COLORS.length]
+                )}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function AnalyticsPage() {
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } = usePNodes();
@@ -113,10 +150,9 @@ export default function AnalyticsPage() {
     .map(([usage, count]) => ({ usage, count }));
 
   const versionChartData = stats?.versionDistribution
-    ? Object.entries(stats.versionDistribution).map(([version, count]) => ({
-        version,
-        count,
-      }))
+    ? Object.entries(stats.versionDistribution)
+        .map(([version, count]) => ({ version, count }))
+        .sort((a, b) => b.count - a.count)
     : [];
 
   // Status breakdown
@@ -260,38 +296,12 @@ export default function AnalyticsPage() {
                 <CardTitle>X-Score Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading || scoreChartData.length === 0 ? (
-                  <Skeleton className="h-[300px] w-full" />
-                ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={scoreChartData}>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="hsl(var(--border))"
-                      />
-                      <XAxis
-                        dataKey="range"
-                        tick={{ fill: "hsl(var(--muted-foreground))" }}
-                      />
-                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          borderColor: "hsl(var(--border))",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]}>
-                        {scoreChartData.map((_, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
+                <SimpleBarChart
+                  data={scoreChartData}
+                  dataKey="range"
+                  valueKey="count"
+                  isLoading={isLoading}
+                />
               </CardContent>
             </Card>
 
@@ -369,53 +379,12 @@ export default function AnalyticsPage() {
               <CardTitle>Storage Utilization Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading || storageChartData.length === 0 ? (
-                <Skeleton className="h-[400px] w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={storageChartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                    />
-                    <XAxis
-                      dataKey="usage"
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    />
-                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      stroke="#8b5cf6"
-                      fill="url(#colorStorage)"
-                      strokeWidth={2}
-                    />
-                    <defs>
-                      <linearGradient
-                        id="colorStorage"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                        <stop
-                          offset="95%"
-                          stopColor="#8b5cf6"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
+              <SimpleBarChart
+                data={storageChartData}
+                dataKey="usage"
+                valueKey="count"
+                isLoading={isLoading}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -426,38 +395,12 @@ export default function AnalyticsPage() {
               <CardTitle>Uptime Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading || uptimeChartData.length === 0 ? (
-                <Skeleton className="h-[400px] w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={uptimeChartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                    />
-                    <XAxis
-                      dataKey="bracket"
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    />
-                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]}>
-                      {uptimeChartData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[(index + 3) % COLORS.length]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+              <SimpleBarChart
+                data={uptimeChartData}
+                dataKey="bracket"
+                valueKey="count"
+                isLoading={isLoading}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -468,43 +411,12 @@ export default function AnalyticsPage() {
               <CardTitle>Version Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading || versionChartData.length === 0 ? (
-                <Skeleton className="h-[400px] w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={versionChartData} layout="vertical">
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                    />
-                    <XAxis
-                      type="number"
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="version"
-                      tick={{ fill: "hsl(var(--muted-foreground))" }}
-                      width={80}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]}>
-                      {versionChartData.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+              <SimpleBarChart
+                data={versionChartData}
+                dataKey="version"
+                valueKey="count"
+                isLoading={isLoading}
+              />
             </CardContent>
           </Card>
         </TabsContent>
