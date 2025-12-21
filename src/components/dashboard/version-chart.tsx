@@ -1,16 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface VersionChartProps {
   data: Record<string, number> | null | undefined;
@@ -18,22 +11,14 @@ interface VersionChartProps {
 }
 
 const COLORS = [
-  "#8b5cf6", // violet-500
-  "#6366f1", // indigo-500
-  "#3b82f6", // blue-500
-  "#06b6d4", // cyan-500
-  "#10b981", // emerald-500
-  "#f59e0b", // amber-500
-  "#ef4444", // red-500
+  "bg-violet-500",
+  "bg-indigo-500",
+  "bg-blue-500",
+  "bg-cyan-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-red-500",
 ];
-
-// Safe label renderer that handles null/undefined values
-const renderLabel = (entry: { name?: string; percent?: number }) => {
-  if (!entry) return "";
-  const name = entry.name ?? "Unknown";
-  const percent = typeof entry.percent === "number" ? entry.percent : 0;
-  return `${name} (${(percent * 100).toFixed(0)}%)`;
-};
 
 export function VersionChart({ data, isLoading }: VersionChartProps) {
   // Memoize chart data to prevent unnecessary recalculations
@@ -41,16 +26,27 @@ export function VersionChart({ data, isLoading }: VersionChartProps) {
     if (!data || typeof data !== "object") return [];
     
     try {
-      return Object.entries(data)
+      const entries = Object.entries(data)
         .filter(([, count]) => typeof count === "number" && count > 0)
         .map(([version, count]) => ({
           name: String(version || "Unknown"),
           value: Number(count) || 0,
-        }));
+        }))
+        .sort((a, b) => b.value - a.value);
+      
+      const total = entries.reduce((sum, e) => sum + e.value, 0);
+      return entries.map(e => ({
+        ...e,
+        percent: total > 0 ? (e.value / total) * 100 : 0,
+      }));
     } catch {
       return [];
     }
   }, [data]);
+
+  const total = useMemo(() => 
+    chartData.reduce((sum, e) => sum + e.value, 0),
+  [chartData]);
 
   // Show loading state
   if (isLoading) {
@@ -90,47 +86,45 @@ export function VersionChart({ data, isLoading }: VersionChartProps) {
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={2}
-              dataKey="value"
-              nameKey="name"
-              label={renderLabel}
-              labelLine={false}
-              isAnimationActive={false}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${entry.name}-${index}`}
-                  fill={COLORS[index % COLORS.length]}
-                  className="stroke-background stroke-2"
+      <CardContent className="space-y-4">
+        {/* Progress bars for each version */}
+        <div className="space-y-3">
+          {chartData.map((entry, index) => (
+            <div key={entry.name} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{entry.name}</span>
+                <span className="text-muted-foreground">
+                  {entry.value} ({entry.percent.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="h-3 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    COLORS[index % COLORS.length]
+                  )}
+                  style={{ width: `${entry.percent}%` }}
                 />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                borderColor: "hsl(var(--border))",
-                borderRadius: "8px",
-              }}
-              labelStyle={{ color: "hsl(var(--foreground))" }}
-            />
-            <Legend
-              verticalAlign="bottom"
-              height={36}
-              formatter={(value) => (
-                <span className="text-sm text-muted-foreground">{String(value ?? "")}</span>
-              )}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Summary */}
+        <div className="pt-4 border-t flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Total Nodes</span>
+          <span className="font-semibold">{total}</span>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-3 pt-2">
+          {chartData.slice(0, 5).map((entry, index) => (
+            <div key={entry.name} className="flex items-center gap-2">
+              <div className={cn("w-3 h-3 rounded-full", COLORS[index % COLORS.length])} />
+              <span className="text-xs text-muted-foreground">{entry.name}</span>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
