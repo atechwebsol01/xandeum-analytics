@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   PieChart,
   Pie,
@@ -12,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface VersionChartProps {
-  data: Record<string, number>;
+  data: Record<string, number> | null | undefined;
   isLoading: boolean;
 }
 
@@ -26,7 +27,32 @@ const COLORS = [
   "#ef4444", // red-500
 ];
 
+// Safe label renderer that handles null/undefined values
+const renderLabel = (entry: { name?: string; percent?: number }) => {
+  if (!entry) return "";
+  const name = entry.name ?? "Unknown";
+  const percent = typeof entry.percent === "number" ? entry.percent : 0;
+  return `${name} (${(percent * 100).toFixed(0)}%)`;
+};
+
 export function VersionChart({ data, isLoading }: VersionChartProps) {
+  // Memoize chart data to prevent unnecessary recalculations
+  const chartData = useMemo(() => {
+    if (!data || typeof data !== "object") return [];
+    
+    try {
+      return Object.entries(data)
+        .filter(([, count]) => typeof count === "number" && count > 0)
+        .map(([version, count]) => ({
+          name: String(version || "Unknown"),
+          value: Number(count) || 0,
+        }));
+    } catch {
+      return [];
+    }
+  }, [data]);
+
+  // Show loading state
   if (isLoading) {
     return (
       <Card>
@@ -40,25 +66,7 @@ export function VersionChart({ data, isLoading }: VersionChartProps) {
     );
   }
 
-  // Handle null or undefined data
-  if (!data || typeof data !== "object") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Version Distribution</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center h-[300px]">
-          <p className="text-muted-foreground">No version data available</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const chartData = Object.entries(data).map(([version, count]) => ({
-    name: version || "Unknown",
-    value: count,
-  }));
-
+  // Show empty state if no valid data
   if (chartData.length === 0) {
     return (
       <Card>
@@ -93,14 +101,14 @@ export function VersionChart({ data, isLoading }: VersionChartProps) {
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
-              label={({ name, percent }) =>
-                `${name} (${((percent || 0) * 100).toFixed(0)}%)`
-              }
+              nameKey="name"
+              label={renderLabel}
               labelLine={false}
+              isAnimationActive={false}
             >
-              {chartData.map((_, index) => (
+              {chartData.map((entry, index) => (
                 <Cell
-                  key={`cell-${index}`}
+                  key={`cell-${entry.name}-${index}`}
                   fill={COLORS[index % COLORS.length]}
                   className="stroke-background stroke-2"
                 />
@@ -118,7 +126,7 @@ export function VersionChart({ data, isLoading }: VersionChartProps) {
               verticalAlign="bottom"
               height={36}
               formatter={(value) => (
-                <span className="text-sm text-muted-foreground">{value}</span>
+                <span className="text-sm text-muted-foreground">{String(value ?? "")}</span>
               )}
             />
           </PieChart>
