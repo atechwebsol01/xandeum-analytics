@@ -260,7 +260,7 @@ export default function AnalyticsPage() {
                 <CardTitle>X-Score Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {isLoading || scoreChartData.length === 0 ? (
                   <Skeleton className="h-[300px] w-full" />
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
                 <CardTitle>Node Status</CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {isLoading || nodes.length === 0 ? (
                   <Skeleton className="h-[300px] w-full" />
                 ) : (
                   <div className="space-y-6">
@@ -329,10 +329,9 @@ export default function AnalyticsPage() {
                       <div className="flex justify-between text-sm">
                         <span>Online</span>
                         <span>
-                          {(
-                            (statusBreakdown.online / nodes.length) *
-                            100
-                          ).toFixed(1)}
+                          {nodes.length > 0
+                            ? ((statusBreakdown.online / nodes.length) * 100).toFixed(1)
+                            : 0}
                           %
                         </span>
                       </div>
@@ -340,19 +339,19 @@ export default function AnalyticsPage() {
                         <div
                           className="bg-emerald-500 transition-all"
                           style={{
-                            width: `${(statusBreakdown.online / nodes.length) * 100}%`,
+                            width: nodes.length > 0 ? `${(statusBreakdown.online / nodes.length) * 100}%` : '0%',
                           }}
                         />
                         <div
                           className="bg-yellow-500 transition-all"
                           style={{
-                            width: `${(statusBreakdown.warning / nodes.length) * 100}%`,
+                            width: nodes.length > 0 ? `${(statusBreakdown.warning / nodes.length) * 100}%` : '0%',
                           }}
                         />
                         <div
                           className="bg-red-500 transition-all"
                           style={{
-                            width: `${(statusBreakdown.offline / nodes.length) * 100}%`,
+                            width: nodes.length > 0 ? `${(statusBreakdown.offline / nodes.length) * 100}%` : '0%',
                           }}
                         />
                       </div>
@@ -370,7 +369,7 @@ export default function AnalyticsPage() {
               <CardTitle>Storage Utilization Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isLoading || storageChartData.length === 0 ? (
                 <Skeleton className="h-[400px] w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={400}>
@@ -427,7 +426,7 @@ export default function AnalyticsPage() {
               <CardTitle>Uptime Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isLoading || uptimeChartData.length === 0 ? (
                 <Skeleton className="h-[400px] w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={400}>
@@ -469,7 +468,7 @@ export default function AnalyticsPage() {
               <CardTitle>Version Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isLoading || versionChartData.length === 0 ? (
                 <Skeleton className="h-[400px] w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height={400}>
