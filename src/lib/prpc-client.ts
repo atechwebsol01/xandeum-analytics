@@ -1,155 +1,46 @@
 import type { PNode, PRPCResponse, GetPodsResponse } from "@/types/pnode";
 
-// Get pRPC endpoints from environment or use defaults
-// Note: These endpoints are used to fetch pNode data from the Xandeum network
+// Default pRPC endpoints from the Xandeum network (port 6000)
+// Can be overridden via NEXT_PUBLIC_PRPC_ENDPOINTS environment variable
+// Updated list from Discord #devnet-developer-support (Dec 21, 2025)
+// Note: These are PUBLIC nodes with is_public: true - pRPC runs on port 6000
+const DEFAULT_PRPC_ENDPOINTS = [
+  "http://192.190.136.28:6000",
+  "http://173.212.207.32:6000",
+  "http://152.53.236.91:6000",
+  "http://216.234.134.5:6000",
+  "http://161.97.185.116:6000",
+  "http://152.53.155.15:6000",
+  "http://173.249.3.118:6000",
+  "http://45.151.122.60:6000",
+  "http://173.212.220.65:6000",
+  "http://154.38.169.212:6000",
+  "http://84.21.171.129:6000",
+  "http://207.244.255.1:6000",
+];
+
+// Get endpoints from environment or use defaults
 const getEndpoints = (): string[] => {
   const envEndpoints = process.env.NEXT_PUBLIC_PRPC_ENDPOINTS;
   if (envEndpoints) {
     return envEndpoints.split(",").map((e) => e.trim()).filter(Boolean);
   }
-  // Default endpoints - using multiple for redundancy
-  return [
-    "https://prpc.xandeum.network",
-    "https://rpc.xandeum.network",
-  ];
+  return DEFAULT_PRPC_ENDPOINTS;
 };
 
 const PRPC_ENDPOINTS = getEndpoints();
-const CACHE_TTL = Number(process.env.NEXT_PUBLIC_CACHE_TTL) || 30000; // 30 seconds default
-const REQUEST_TIMEOUT = 10000; // 10 seconds timeout (reduced for faster fallback)
+
+// Pod Credits API - official reputation system
+const POD_CREDITS_API = process.env.NEXT_PUBLIC_POD_CREDITS_API || "https://podcredits.xandeum.network/api/pods-credits";
+
+const CACHE_TTL = 30000; // 30 seconds
+const REQUEST_TIMEOUT = 15000; // 15 seconds timeout
+
+// Cache for pods and credits
 let cachedPods: PNode[] | null = null;
+let cachedCredits: Map<string, number> = new Map();
 let lastFetchTime = 0;
-let useDemoData = false;
-
-// Seeded random number generator for consistent demo data
-class SeededRandom {
-  private seed: number;
-  
-  constructor(seed: number) {
-    this.seed = seed;
-  }
-  
-  next(): number {
-    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
-    return this.seed / 0x7fffffff;
-  }
-  
-  nextInt(min: number, max: number): number {
-    return Math.floor(this.next() * (max - min + 1)) + min;
-  }
-}
-
-// Demo data - stable and consistent across requests
-// This ensures the app is always functional for demonstration
-function generateDemoData(): PNode[] {
-  const now = Math.floor(Date.now() / 1000);
-  const versions = ["1.2.0", "1.1.9", "1.1.8", "1.1.7", "1.1.6"];
-  const rng = new SeededRandom(42); // Fixed seed for consistency
-  
-  // Pre-defined node configurations for realistic demo
-  const nodeConfigs = [
-    { name: "alpha", region: "us-east", tier: "premium" },
-    { name: "beta", region: "eu-west", tier: "standard" },
-    { name: "gamma", region: "asia-pacific", tier: "premium" },
-    { name: "delta", region: "us-west", tier: "standard" },
-    { name: "epsilon", region: "eu-central", tier: "premium" },
-    { name: "zeta", region: "sa-east", tier: "standard" },
-    { name: "eta", region: "us-central", tier: "premium" },
-    { name: "theta", region: "eu-north", tier: "standard" },
-    { name: "iota", region: "asia-south", tier: "premium" },
-    { name: "kappa", region: "oceania", tier: "standard" },
-    { name: "lambda", region: "us-east", tier: "premium" },
-    { name: "mu", region: "eu-west", tier: "standard" },
-    { name: "nu", region: "asia-east", tier: "premium" },
-    { name: "xi", region: "africa", tier: "standard" },
-    { name: "omicron", region: "us-west", tier: "premium" },
-    { name: "pi", region: "eu-south", tier: "standard" },
-    { name: "rho", region: "middle-east", tier: "premium" },
-    { name: "sigma", region: "us-central", tier: "standard" },
-    { name: "tau", region: "eu-central", tier: "premium" },
-    { name: "upsilon", region: "asia-pacific", tier: "standard" },
-    { name: "phi", region: "us-east", tier: "premium" },
-    { name: "chi", region: "eu-west", tier: "standard" },
-    { name: "psi", region: "asia-south", tier: "premium" },
-    { name: "omega", region: "oceania", tier: "standard" },
-    { name: "prime", region: "us-west", tier: "premium" },
-  ];
-  
-  return nodeConfigs.map((config, i) => {
-    const isPremium = config.tier === "premium";
-    const baseUptime = isPremium ? 45 : 25;
-    const uptimeDays = baseUptime + rng.nextInt(5, 35);
-    
-    // Status distribution: 80% online, 12% warning, 8% offline
-    // Premium nodes: 88% online, 10% warning, 2% offline
-    const statusRoll = rng.next();
-    let status: "online" | "warning" | "offline";
-    if (isPremium) {
-      if (statusRoll < 0.88) status = "online";
-      else if (statusRoll < 0.98) status = "warning";
-      else status = "offline";
-    } else {
-      if (statusRoll < 0.76) status = "online";
-      else if (statusRoll < 0.92) status = "warning";
-      else status = "offline";
-    }
-    
-    // Storage varies by tier - always substantial values
-    const storageBase = isPremium ? 600 : 300;
-    const storageCommitted = (storageBase + rng.nextInt(100, 600)) * 1024 * 1024 * 1024;
-    const usagePercent = isPremium ? rng.nextInt(55, 92) : rng.nextInt(35, 78);
-    const storageUsed = Math.floor(storageCommitted * (usagePercent / 100));
-    
-    const pubkey = generateSeededPubkey(config.name, i);
-    
-    const regionIPs: Record<string, [number, number]> = {
-      "us-east": [34, 35], "us-west": [35, 36], "us-central": [104, 105],
-      "eu-west": [52, 53], "eu-central": [18, 19], "eu-north": [13, 14], "eu-south": [15, 16],
-      "asia-pacific": [54, 55], "asia-south": [65, 66], "asia-east": [47, 48],
-      "oceania": [13, 14], "sa-east": [18, 19], "africa": [41, 42], "middle-east": [157, 158],
-    };
-    const [ipBase1, ipBase2] = regionIPs[config.region] || [10, 11];
-    
-    // Generate last_seen based on status (matches getStatusColor thresholds)
-    let lastSeenOffset: number;
-    if (status === "online") {
-      lastSeenOffset = rng.nextInt(5, 90); // 5-90 seconds ago (online < 120s)
-    } else if (status === "warning") {
-      lastSeenOffset = rng.nextInt(130, 500); // 130-500 seconds ago (warning: 120-600s)
-    } else {
-      lastSeenOffset = rng.nextInt(700, 1800); // 700-1800 seconds ago (offline > 600s)
-    }
-    
-    return {
-      pubkey,
-      address: `${ipBase1}.${ipBase2}.${rng.nextInt(1, 254)}.${rng.nextInt(1, 254)}:${6000 + i}`,
-      rpc_port: 6000 + i,
-      version: versions[i % versions.length],
-      is_public: isPremium || rng.next() > 0.4,
-      last_seen_timestamp: now - lastSeenOffset,
-      storage_committed: storageCommitted,
-      storage_used: storageUsed,
-      storage_usage_percent: usagePercent,
-      uptime: uptimeDays * 86400 + rng.nextInt(3600, 86400),
-    };
-  });
-}
-
-function generateSeededPubkey(seed: string, index: number): string {
-  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-  let hash = index * 31;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-    hash = hash & hash;
-  }
-  
-  let result = "";
-  for (let i = 0; i < 44; i++) {
-    hash = (hash * 1103515245 + 12345) & 0x7fffffff;
-    result += chars.charAt(hash % chars.length);
-  }
-  return result;
-}
+let lastCreditsTime = 0;
 
 async function callPRPC<T>(
   endpoint: string,
@@ -160,11 +51,14 @@ async function callPRPC<T>(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
+    console.log(`[pRPC] Calling ${method} on ${endpoint}...`);
+    
     const response = await fetch(`${endpoint}/rpc`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
+        "User-Agent": "XandeumAnalytics/1.0",
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -179,81 +73,139 @@ async function callPRPC<T>(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.error(`[pRPC] HTTP error from ${endpoint}: ${response.status} ${response.statusText}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = (await response.json()) as PRPCResponse<T>;
 
-    if ("error" in data) {
-      throw new Error(
-        (data as unknown as { error: { message: string } }).error.message
-      );
+    if ("error" in data && data.error) {
+      const errorMsg = typeof data.error === 'object' && 'message' in data.error 
+        ? (data.error as { message: string }).message 
+        : String(data.error);
+      console.error(`[pRPC] RPC error from ${endpoint}: ${errorMsg}`);
+      throw new Error(errorMsg);
     }
 
+    console.log(`[pRPC] Success from ${endpoint}`);
     return data.result;
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error(`Request timeout after ${REQUEST_TIMEOUT / 1000}s`);
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        console.error(`[pRPC] Timeout from ${endpoint}`);
+        throw new Error(`Request timeout after ${REQUEST_TIMEOUT / 1000}s`);
+      }
+      console.error(`[pRPC] Error from ${endpoint}: ${error.message}`);
     }
     throw error;
+  }
+}
+
+// Fetch Pod Credits from the official API
+export async function fetchPodCredits(): Promise<Map<string, number>> {
+  const now = Date.now();
+  
+  // Return cached credits if still valid
+  if (cachedCredits.size > 0 && now - lastCreditsTime < CACHE_TTL) {
+    return cachedCredits;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+    const response = await fetch(POD_CREDITS_API, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.status === "success" && Array.isArray(data.pods_credits)) {
+      const creditsMap = new Map<string, number>();
+      for (const item of data.pods_credits) {
+        creditsMap.set(item.pod_id, item.credits);
+      }
+      cachedCredits = creditsMap;
+      lastCreditsTime = now;
+      console.log(`Fetched ${creditsMap.size} pod credits`);
+      return creditsMap;
+    }
+
+    throw new Error("Invalid pod credits response format");
+  } catch (error) {
+    console.warn("Failed to fetch pod credits:", error);
+    return cachedCredits; // Return stale cache if available
   }
 }
 
 export async function fetchPods(): Promise<PNode[]> {
   const now = Date.now();
   
-  // IMPORTANT: For demo mode, ALWAYS regenerate fresh data to keep timestamps current
-  // This must come BEFORE the cache check
-  if (useDemoData) {
-    cachedPods = generateDemoData();
-    lastFetchTime = now;
-    return cachedPods;
-  }
-  
-  // Return cached data if still valid (only for real API data)
+  // Return cached data if still valid
   if (cachedPods && now - lastFetchTime < CACHE_TTL) {
+    console.log("[pRPC] Returning cached pods data");
     return cachedPods;
   }
 
-  const errors: string[] = [];
+  console.log(`[pRPC] Fetching fresh data from ${PRPC_ENDPOINTS.length} endpoints...`);
 
-  // Try each endpoint until one works
-  for (const endpoint of PRPC_ENDPOINTS) {
-    try {
-      console.log(`Fetching pNodes from ${endpoint}...`);
-      const result = await callPRPC<PNode[]>(endpoint, "get-pods-with-stats");
-      
-      // Handle both array and object responses
-      const pods = Array.isArray(result) ? result : (result as unknown as GetPodsResponse).pods || [];
-      
-      if (pods.length > 0) {
-        console.log(`Successfully fetched ${pods.length} pNodes from ${endpoint}`);
-        cachedPods = pods;
-        lastFetchTime = now;
-        useDemoData = false;
-        return pods;
+  // Try endpoints in parallel - first successful response wins
+  const results = await Promise.allSettled(
+    PRPC_ENDPOINTS.map(async (endpoint) => {
+      const result = await callPRPC<GetPodsResponse>(endpoint, "get-pods-with-stats");
+      const pods = Array.isArray(result) ? result : result.pods || [];
+      if (pods.length === 0) {
+        throw new Error("Empty response");
       }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.warn(`Failed to fetch from ${endpoint}:`, errorMsg);
-      errors.push(`${endpoint}: ${errorMsg}`);
-      continue;
+      return { endpoint, pods };
+    })
+  );
+
+  // Find first successful result
+  for (const result of results) {
+    if (result.status === "fulfilled" && result.value.pods.length > 0) {
+      console.log(`[pRPC] Success! Got ${result.value.pods.length} pNodes from ${result.value.endpoint}`);
+      cachedPods = result.value.pods;
+      lastFetchTime = now;
+      return result.value.pods;
     }
   }
 
+  // Collect all errors for debugging
+  const errors = results
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((r) => r.reason?.message || String(r.reason))
+    .slice(0, 3); // Only show first 3 errors
+
+  console.error(`[pRPC] All ${PRPC_ENDPOINTS.length} endpoints failed. Sample errors: ${errors.join("; ")}`);
+
   // If all endpoints fail but we have cached data, return it
-  if (cachedPods && !useDemoData) {
-    console.warn("All endpoints failed, returning stale cache");
+  if (cachedPods) {
+    console.warn("[pRPC] All endpoints failed, returning stale cache");
     return cachedPods;
   }
 
-  // Fallback to demo data - this ensures the app always works for demonstration
-  console.warn("All pRPC endpoints unreachable. Using demo data for demonstration.");
-  useDemoData = true;
-  cachedPods = generateDemoData();
-  lastFetchTime = now;
-  return cachedPods;
+  // No data available
+  throw new Error(`All pRPC endpoints unreachable. This may be due to network restrictions on the server. Sample errors: ${errors.join("; ")}`);
+}
+
+// Fetch pods with their credits combined
+export async function fetchPodsWithCredits(): Promise<{ pods: PNode[]; credits: Map<string, number> }> {
+  const [pods, credits] = await Promise.all([
+    fetchPods(),
+    fetchPodCredits(),
+  ]);
+  return { pods, credits };
 }
 
 export async function fetchPodByPubkey(pubkey: string): Promise<PNode | null> {
@@ -263,10 +215,13 @@ export async function fetchPodByPubkey(pubkey: string): Promise<PNode | null> {
 
 export function clearCache(): void {
   cachedPods = null;
+  cachedCredits = new Map();
   lastFetchTime = 0;
-  useDemoData = false;
+  lastCreditsTime = 0;
 }
 
-export function isUsingDemoData(): boolean {
-  return useDemoData;
+export function getCachedCredits(): Map<string, number> {
+  return cachedCredits;
 }
+
+export { POD_CREDITS_API, PRPC_ENDPOINTS };
