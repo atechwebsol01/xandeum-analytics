@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { RefreshCw, AlertCircle, TrendingUp, Info, Keyboard } from "lucide-react";
+import { RefreshCw, AlertCircle, Keyboard, Award, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +14,9 @@ import { NetworkHealth } from "@/components/dashboard/network-health";
 import { NetworkAlerts } from "@/components/dashboard/network-alerts";
 import { LiveIndicator } from "@/components/dashboard/live-indicator";
 import { QuickStats } from "@/components/dashboard/quick-stats";
+import { NetworkMap } from "@/components/dashboard/network-map";
 import { usePNodes } from "@/hooks/use-pnodes";
-import { cn, timeAgo } from "@/lib/utils";
+import { cn, timeAgo, formatCredits } from "@/lib/utils";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -25,7 +26,7 @@ export default function DashboardPage() {
   const nodes = data?.success ? data.data.nodes : [];
   const stats = data?.success ? data.data.stats : null;
   const apiError = data?.success === false ? data?.error : null;
-  const isDemo = data?.success ? data.data.isDemo : false;
+  const creditsCount = data?.success ? data.data.creditsCount : 0;
 
   // Handle refresh from keyboard shortcut
   useEffect(() => {
@@ -93,17 +94,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Demo Mode Banner */}
-      {isDemo && !isError && (
-        <Card className="border-blue-500/50 bg-blue-500/5">
+      {/* Live Data Banner */}
+      {!isError && !isLoading && nodes.length > 0 && (
+        <Card className="border-emerald-500/50 bg-emerald-500/5">
           <CardContent className="flex items-center gap-3 py-4">
-            <Info className="h-5 w-5 text-blue-500 shrink-0" />
+            <Coins className="h-5 w-5 text-emerald-500 shrink-0" />
             <div className="flex-1">
-              <p className="font-medium text-blue-500">
-                Demo Mode Active
+              <p className="font-medium text-emerald-500">
+                Live Network Data
               </p>
               <p className="text-sm text-muted-foreground">
-                Showing simulated data for demonstration. Real pRPC endpoints are currently unreachable.
+                Connected to Xandeum pRPC network. Tracking {nodes.length} pNodes with {creditsCount} pod credits records.
               </p>
             </div>
           </CardContent>
@@ -141,20 +142,31 @@ export default function DashboardPage() {
       {/* Network Stats */}
       <NetworkStatsGrid stats={stats} isLoading={isLoading} />
 
+      {/* Global Map */}
+      <NetworkMap nodes={nodes} isLoading={isLoading} />
+
       {/* Charts Row */}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <VersionChart
-          data={stats?.versionDistribution || {}}
-          isLoading={isLoading}
-        />
+        {/* Only render chart when data is fully loaded to avoid Recharts null errors */}
+        {!isLoading && stats?.versionDistribution ? (
+          <VersionChart
+            data={stats.versionDistribution}
+            isLoading={false}
+          />
+        ) : (
+          <VersionChart
+            data={{}}
+            isLoading={true}
+          />
+        )}
         
-        {/* Top Performers Card */}
+        {/* Top Performers by Credits */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
-                Top Performers
+                <Award className="h-5 w-5 text-yellow-500" />
+                Top Pod Credits
               </CardTitle>
               <Link href="/pnodes">
                 <Button variant="ghost" size="sm" className="text-xs">
@@ -173,7 +185,7 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-2">
                 {nodes
-                  .sort((a, b) => b.xScore - a.xScore)
+                  .sort((a, b) => b.credits - a.credits)
                   .slice(0, 5)
                   .map((node, index) => (
                     <Link
@@ -221,15 +233,17 @@ export default function DashboardPage() {
                           </Badge>
                           <div
                             className={cn(
-                              "flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg font-bold text-xs sm:text-sm",
-                              node.xScore >= 80
+                              "flex h-8 w-auto px-2 sm:h-10 items-center justify-center rounded-lg font-bold text-xs sm:text-sm",
+                              node.credits >= 40000
                                 ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
-                                : node.xScore >= 60
+                                : node.credits >= 20000
+                                ? "bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/20"
+                                : node.credits >= 10000
                                 ? "bg-yellow-500/10 text-yellow-500 ring-1 ring-yellow-500/20"
-                                : "bg-red-500/10 text-red-500 ring-1 ring-red-500/20"
+                                : "bg-orange-500/10 text-orange-500 ring-1 ring-orange-500/20"
                             )}
                           >
-                            {node.xScore}
+                            {formatCredits(node.credits)}
                           </div>
                         </div>
                       </div>
