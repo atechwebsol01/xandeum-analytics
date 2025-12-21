@@ -40,6 +40,20 @@ export function VersionChart({ data, isLoading }: VersionChartProps) {
     );
   }
 
+  // Handle null or undefined data
+  if (!data || typeof data !== "object") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Version Distribution</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px]">
+          <p className="text-muted-foreground">No version data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const chartData = Object.entries(data).map(([version, count]) => ({
     name: version || "Unknown",
     value: count,
