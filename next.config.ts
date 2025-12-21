@@ -54,6 +54,22 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [];
   },
+
+  // Rewrites to proxy external APIs (bypasses CORS and mixed content)
+  async rewrites() {
+    return [
+      // Proxy pRPC requests to avoid mixed content/CORS
+      {
+        source: "/proxy/prpc/:path*",
+        destination: "http://192.190.136.28:6000/:path*",
+      },
+      // Proxy pod credits API to avoid CORS
+      {
+        source: "/proxy/credits",
+        destination: "https://podcredits.xandeum.network/api/pods-credits",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

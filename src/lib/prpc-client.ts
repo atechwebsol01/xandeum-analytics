@@ -1,22 +1,13 @@
 import type { PNode, PRPCResponse, GetPodsResponse } from "@/types/pnode";
 
-// Default pRPC endpoints from the Xandeum network (port 6000)
-// Can be overridden via NEXT_PUBLIC_PRPC_ENDPOINTS environment variable
-// Updated list from Discord #devnet-developer-support (Dec 21, 2025)
-// Note: These are PUBLIC nodes with is_public: true - pRPC runs on port 6000
+// pRPC endpoints - use proxy in production to avoid CORS/mixed content
+// The proxy is configured in next.config.ts rewrites
+const IS_SERVER = typeof window === "undefined";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
+
+// Use proxy URLs that go through Vercel's rewrite (works on both server and client)
 const DEFAULT_PRPC_ENDPOINTS = [
-  "http://192.190.136.28:6000",
-  "http://173.212.207.32:6000",
-  "http://152.53.236.91:6000",
-  "http://216.234.134.5:6000",
-  "http://161.97.185.116:6000",
-  "http://152.53.155.15:6000",
-  "http://173.249.3.118:6000",
-  "http://45.151.122.60:6000",
-  "http://173.212.220.65:6000",
-  "http://154.38.169.212:6000",
-  "http://84.21.171.129:6000",
-  "http://207.244.255.1:6000",
+  `${BASE_URL}/proxy/prpc`,
 ];
 
 // Get endpoints from environment or use defaults
@@ -30,8 +21,8 @@ const getEndpoints = (): string[] => {
 
 const PRPC_ENDPOINTS = getEndpoints();
 
-// Pod Credits API - official reputation system
-const POD_CREDITS_API = process.env.NEXT_PUBLIC_POD_CREDITS_API || "https://podcredits.xandeum.network/api/pods-credits";
+// Pod Credits API - use proxy to avoid CORS
+const POD_CREDITS_API = `${BASE_URL}/proxy/credits`;
 
 const CACHE_TTL = 30000; // 30 seconds
 const REQUEST_TIMEOUT = 15000; // 15 seconds timeout
