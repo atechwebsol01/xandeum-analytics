@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftRight, ExternalLink, Loader2 } from "lucide-react";
@@ -38,32 +38,30 @@ export function JupiterSwap() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-
-  // Callback ref to know when DOM element is mounted
-  const setTerminalRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      setIsReady(true);
-    }
-  }, []);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const initAttemptedRef = useRef(false);
 
   useEffect(() => {
-    // Only run on client and when DOM is ready
-    if (typeof window === "undefined" || !isReady) return;
+    // Only run on client
+    if (typeof window === "undefined") return;
 
     let isMounted = true;
     let checkJupiterInterval: NodeJS.Timeout | null = null;
     let loadTimeout: NodeJS.Timeout | null = null;
+    let retryTimeout: NodeJS.Timeout | null = null;
 
     const initJupiter = () => {
-      if (!window.Jupiter || isInitialized || !isMounted) return;
+      if (!window.Jupiter || isInitialized || !isMounted || initAttemptedRef.current) return;
 
-      // Double-check the element exists with retries
-      const element = document.getElementById("jupiter-terminal");
+      // Verify element exists
+      const element = terminalRef.current || document.getElementById("jupiter-terminal");
       if (!element) {
-        console.warn("Jupiter terminal element not found, skipping init");
+        // Retry after a short delay
+        retryTimeout = setTimeout(initJupiter, 200);
         return;
       }
+
+      initAttemptedRef.current = true;
 
       try {
         window.Jupiter.init({
@@ -86,23 +84,27 @@ export function JupiterSwap() {
         setIsLoading(false);
       } catch (err) {
         console.error("Jupiter init error:", err);
+        initAttemptedRef.current = false;
         setError("Failed to initialize Jupiter swap");
         setIsLoading(false);
       }
     };
 
     const loadJupiterTerminal = () => {
-      // Verify the DOM element exists before proceeding
-      const targetElement = document.getElementById("jupiter-terminal");
+      // Wait for DOM element to be ready
+      const targetElement = terminalRef.current || document.getElementById("jupiter-terminal");
       if (!targetElement) {
-        console.warn("Jupiter terminal target element not ready");
+        // Retry after a short delay - element should be mounted soon
+        retryTimeout = setTimeout(loadJupiterTerminal, 100);
         return;
       }
 
       try {
-        // Check if already loaded
+        // Check if Jupiter is already loaded and initialized
         if (window.Jupiter) {
-          initJupiter();
+          if (!isInitialized && !initAttemptedRef.current) {
+            initJupiter();
+          }
           return;
         }
 
@@ -114,29 +116,29 @@ export function JupiterSwap() {
           document.head.appendChild(link);
         }
 
-        // Load Jupiter Terminal script
+        // Load Jupiter Terminal script only if not already loaded
         if (!document.querySelector('script[src*="terminal.jup.ag"]')) {
           const script = document.createElement("script");
           script.src = "https://terminal.jup.ag/main-v2.js";
           script.async = true;
           script.onload = () => {
-            // Wait for Jupiter to be available
+            // Wait for Jupiter to be available on window
             checkJupiterInterval = setInterval(() => {
               if (window.Jupiter && isMounted) {
                 if (checkJupiterInterval) clearInterval(checkJupiterInterval);
-                // Small delay to ensure everything is ready
-                setTimeout(initJupiter, 150);
+                // Delay to ensure DOM is fully ready
+                setTimeout(initJupiter, 300);
               }
             }, 100);
 
-            // Timeout after 10 seconds
+            // Timeout after 15 seconds
             loadTimeout = setTimeout(() => {
               if (checkJupiterInterval) clearInterval(checkJupiterInterval);
               if (!window.Jupiter && isMounted) {
                 setError("Failed to load Jupiter Terminal");
                 setIsLoading(false);
               }
-            }, 10000);
+            }, 15000);
           };
           script.onerror = () => {
             if (isMounted) {
@@ -145,8 +147,22 @@ export function JupiterSwap() {
             }
           };
           document.body.appendChild(script);
-        } else if (window.Jupiter) {
-          initJupiter();
+        } else {
+          // Script exists but Jupiter might not be ready yet
+          checkJupiterInterval = setInterval(() => {
+            if (window.Jupiter && isMounted) {
+              if (checkJupiterInterval) clearInterval(checkJupiterInterval);
+              setTimeout(initJupiter, 300);
+            }
+          }, 100);
+
+          loadTimeout = setTimeout(() => {
+            if (checkJupiterInterval) clearInterval(checkJupiterInterval);
+            if (!isInitialized && isMounted) {
+              setError("Jupiter Terminal failed to initialize");
+              setIsLoading(false);
+            }
+          }, 15000);
         }
       } catch (err) {
         console.error("Jupiter load error:", err);
@@ -157,9 +173,11 @@ export function JupiterSwap() {
       }
     };
 
-    // Use requestAnimationFrame + timeout to ensure DOM is painted
+    // Use multiple frames to ensure DOM is fully painted and stable
     const rafId = requestAnimationFrame(() => {
-      setTimeout(loadJupiterTerminal, 100);
+      requestAnimationFrame(() => {
+        setTimeout(loadJupiterTerminal, 200);
+      });
     });
 
     return () => {
@@ -167,8 +185,9 @@ export function JupiterSwap() {
       cancelAnimationFrame(rafId);
       if (checkJupiterInterval) clearInterval(checkJupiterInterval);
       if (loadTimeout) clearTimeout(loadTimeout);
+      if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [isReady, isInitialized]);
+  }, [isInitialized]);
 
   return (
     <Card className="overflow-hidden">
@@ -210,7 +229,7 @@ export function JupiterSwap() {
         )}
         <div
           id="jupiter-terminal"
-          ref={setTerminalRef}
+          ref={terminalRef}
           className={isLoading || error ? "hidden" : ""}
           style={{ minHeight: "400px" }}
         />
