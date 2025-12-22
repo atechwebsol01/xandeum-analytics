@@ -154,58 +154,63 @@ export function NetworkMap({ nodes, isLoading }: NetworkMapProps) {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {nodesWithGeo
-                .filter((n) => n.geo && n.geo.lat && n.geo.lon)
-                .map((node) => (
-                  <CircleMarker
-                    key={node.pubkey}
-                    center={[node.geo!.lat, node.geo!.lon]}
-                    radius={8}
-                    fillColor={getMarkerColor(node.status)}
-                    color="#ffffff"
-                    weight={2}
-                    opacity={1}
-                    fillOpacity={0.8}
-                  >
-                    <Popup>
-                      <div className="min-w-[200px] p-1">
-                        <p className="font-semibold text-sm mb-1">
-                          {node.pubkey.slice(0, 8)}...{node.pubkey.slice(-6)}
-                        </p>
-                        <div className="space-y-1 text-xs">
-                          <p>
-                            <span className="text-gray-500">Location:</span>{" "}
-                            {node.geo!.city}, {node.geo!.country}
+                .filter((n) => n.geo && typeof n.geo.lat === 'number' && typeof n.geo.lon === 'number' && isFinite(n.geo.lat) && isFinite(n.geo.lon))
+                .map((node) => {
+                  const geo = node.geo!;
+                  const city = geo.city || 'Unknown';
+                  const country = geo.country || 'Unknown';
+                  return (
+                    <CircleMarker
+                      key={node.pubkey}
+                      center={[geo.lat, geo.lon]}
+                      radius={8}
+                      fillColor={getMarkerColor(node.status)}
+                      color="#ffffff"
+                      weight={2}
+                      opacity={1}
+                      fillOpacity={0.8}
+                    >
+                      <Popup>
+                        <div className="min-w-[200px] p-1">
+                          <p className="font-semibold text-sm mb-1">
+                            {node.pubkey ? `${node.pubkey.slice(0, 8)}...${node.pubkey.slice(-6)}` : 'Unknown'}
                           </p>
-                          <p>
-                            <span className="text-gray-500">Status:</span>{" "}
-                            <span
-                              className={
-                                node.status === "online"
-                                  ? "text-green-600"
-                                  : node.status === "warning"
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {node.status}
-                            </span>
-                          </p>
-                          <p>
-                            <span className="text-gray-500">Credits:</span>{" "}
-                            {formatCredits(node.credits)}
-                          </p>
-                          <p>
-                            <span className="text-gray-500">Version:</span>{" "}
-                            {node.version}
-                          </p>
-                          <p>
-                            <span className="text-gray-500">IP:</span> {node.ip}
-                          </p>
+                          <div className="space-y-1 text-xs">
+                            <p>
+                              <span className="text-gray-500">Location:</span>{" "}
+                              {city}, {country}
+                            </p>
+                            <p>
+                              <span className="text-gray-500">Status:</span>{" "}
+                              <span
+                                className={
+                                  node.status === "online"
+                                    ? "text-green-600"
+                                    : node.status === "warning"
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {node.status || 'unknown'}
+                              </span>
+                            </p>
+                            <p>
+                              <span className="text-gray-500">Credits:</span>{" "}
+                              {formatCredits(node.credits || 0)}
+                            </p>
+                            <p>
+                              <span className="text-gray-500">Version:</span>{" "}
+                              {node.version || 'unknown'}
+                            </p>
+                            <p>
+                              <span className="text-gray-500">IP:</span> {node.ip || 'unknown'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </Popup>
-                  </CircleMarker>
-                ))}
+                      </Popup>
+                    </CircleMarker>
+                  );
+                })}
             </MapContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
