@@ -1,0 +1,711 @@
+Or you take a look at the Xandeum Github page. These things should be trustless and open source.
+Brad|Xandeum I'm NOT DM'ing YOU — 16/12/2025, 21:06
+Some things have evolved since the white paper...the green pager is likely better...
+
+But to answer the question on pNode vs pod...
+
+a pNode is the collective hardware (server)
+and pod is a piece of software that runs on the pNdode taking care of storage functions
+xandminer is the name of the software GUI for managment
+xandminerd is the daemon that feeds information to xandminer... 
+Brad|Xandeum I'm NOT DM'ing YOU — 16/12/2025, 21:09
+Each pNode has a storage pod inside...but no, there is no col-located nodes. We will have pods that are part of a redunancy group but it is more of a random function not having to do with location...
+That's not to say there arent 2 or more pNodes in the same data center anywhere either though...
+Naga — 17/12/2025, 00:38
+Hey everyone! I’m building for the Superteam pNode Analytics bounty and need some clarification on APIs:
+
+• I tried connecting to the shared pRPC IPs on port 6000 (e.g., the ones previously posted) but I’m getting connection refused. Are there any pNodes running with --rpc-ip 0.0.0.0 or otherwise exposed for public API access?
+
+• I’m currently pulling pod credit data from a public endpoint that returns a list of all pods and their credits — basically the JSON at p o d c r e d i t s . x a n d e u m . n e t w o r k under /api/pods-credits. Can I rely on that as the main source for all active pNodes?
+
+• If a public pRPC endpoint exists, does it support CORS so I can call it directly from browser/JS?
+
+• If not, is the recommended approach to just spin up my own pNode to get full RPC access?
+
+Thanks!
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 05:22
+Did you try the pNodes listed here? ⁠devnet-developer-support⁠
+Naga — 17/12/2025, 11:41
+Yes, I tried, but issue is the same
+
+I’m currently pulling pod credit data from a public endpoint that returns a list of all pods and their credits — basically the JSON at p o d c r e d i t s . x a n d e u m . n e t w o r k under /api/pods-credits. Can I rely on that as the main source for all active pNodes? 
+denisthe — 17/12/2025, 12:56
+Can you please advise "Seed Node" (ip)?
+david354_bitSmiley — 17/12/2025, 14:43
+Is CORS proxy suported if yes, please give us a hint how to set up it
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 15:01
+the pnodes would have to run an https server i feel...
+i dont think its enables at all currently internally...
+BlockEater — 17/12/2025, 16:18
+hello how is uptime calculated in percentage?
+is it 24 hrs window or 30 days?
+Substance 2.42 — 17/12/2025, 16:19
+Fun fact: How many public pRPC were on DevNet before Superteam? Two. A month from now, most of them will be gone.
+Naga — 17/12/2025, 16:54
+@Brad|Xandeum I'm NOT DM'ing YOU can you help me with ths
+Anil Kumar Reddy — 17/12/2025, 17:27
+Which port exposes pnRPC on these nodes?
+Is there a standard pnRPC URL format? (e.g., http://IP:PORT)
+What is the method name to list pNodes in gossip?
+Is there a devnet/testnet node you recommend using?
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 17:28
+⁠devnet-developer-support⁠
+tobytobias — 17/12/2025, 17:36
+@Brad|Xandeum I'm NOT DM'ing YOU I typed a pretty solid message earlier, included a message link — but the bot ate it 😭.
+
+essentially, I was asking about how to run get-stats for other pNodes. I know this has been mentioned before, but I’d appreciate another quick rundown or clarification. thanks
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 17:40
+so get-stats runs against the pnode at the ip address the command is pointed at...
+the get-pods-with-stats call runs against all pNodes that the particular machine ip address you used in the call, sees in gossip via internal communication
+So as long as you have a publicly accessible pRPC then you can get info about all the nodes in gossip...
+Ymetro
+
+ — 17/12/2025, 17:43
+For an outside call of get-stats for detailed information about that node, the node must be publicly accessible, right?
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 17:44
+correct ,that on only works where there is a public pRPC port on that machine...
+Ymetro
+
+ — 17/12/2025, 17:45
+So there is no way of getting detailed information on the individual nodes that are not public?
+tobytobias — 17/12/2025, 17:52
+can i share an image? i don't want the  bot eating my stuff again
+unable to setup a pnode. The docs points to root@<my.p.node.ip>. I have xandminer  and xandminerd running in my server already. Where can I get access to the pod binary to start the pNode? 
+tobytobias — 17/12/2025, 17:53
+someone mentioned how to above... buh the chats that follow also mentioned it wasn't reliable. i'll make a reply to it
+tobytobias — 17/12/2025, 17:54
+@Ymetro this
+Ymetro
+
+ — 17/12/2025, 18:03
+You can share images here. ✅
+Ymetro
+
+ — 17/12/2025, 18:05
+Please check if the system you want Pod to run on is ARM or x86_64, since Pod is build for x86_64 and no source avail for building it for your system.
+tobytobias — 17/12/2025, 18:06
+it a linux server, def x86_64
+Ymetro
+
+ — 17/12/2025, 18:07
+Alright. And did you wget the install.sh script and made it executable and run it to install?
+(erm; just to make sure: Linux can run on ARM as well, so uname -i)
+And make sure git, curl and systemd is installed.
+tobytobias — 17/12/2025, 18:13
+please where is this in the docs?
+Ymetro
+
+ — 17/12/2025, 18:13
+docs.xandeum.network
+Operator Guides -> pNode Guide -> Xandeum pNode Setup Guide and check the UPDATE version below it 
+tobytobias — 17/12/2025, 18:25
+i can't share image nor react (w/ emoji) to messages here, mobile & desktop.
+
+ssh -i ~/.ssh/id_ed25519 root@<my.p.node.ip> -L 4000:localhost:4000 -L 3000:localhost:3000 8000:localhost:8000
+
+currently running this, update version, uhm
+Naga — 17/12/2025, 18:31
+Yes, I tried, but issue is the same
+
+I’m currently pulling pod credit data from a public endpoint that returns a list of all pods and their credits — basically the JSON at p o d c r e d i t s . x a n d e u m . n e t w o r k under /api/pods-credits. Can I rely on that as the main source for all active pNodes?
+Ymetro
+
+ — 17/12/2025, 18:35
+Image
+hmm. Can only mods post images here @Brad|Xandeum I'm NOT DM'ing YOU ? 
+tobytobias — 17/12/2025, 18:36
+i'm on a server. the script binds to 127.0.0.1, can't access the ui using my floating IP address. is there a way (or correct) to bind to 0.0.0.0 when I start install?
+Ymetro
+
+ — 17/12/2025, 18:38
+Check if the ports are blocked by a firewall. Got a script in sec to test ports connectivity.
+Ymetro
+
+ — 17/12/2025, 18:48
+If you run the wget install script, it should ask for the location of your private key and if you want to make it a public one. (it binds TCP port 6000 to 0.0.0.0).
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 18:53
+add devnet / developer roles using "channels and roles" in the top of the channels list 
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 18:58
+Those with credits have been active SOME time this month...thats all you know by that...
+
+here is the diff between get-pods and get-pods-with-stats:
+
+Only shows for macine you're polling:
+curl -X POST http://216.234.134.5:6000/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+  "jsonrpc": "2.0",
+  "method": "get-stats",
+  "id": 1
+}' | jq
+
+result:
+{
+  "active_streams": 2,
+  "cpu_percent": 1.2195121049880981,
+  "current_index": 0,
+  "file_size": 1073741824,
+  "last_updated": 1765911245,
+  "packets_received": 6135613,
+  "packets_sent": 7243099,
+  "ram_total": 4111622144,
+  "ram_used": 1501351936,
+  "total_bytes": 0,
+  "total_pages": 0,
+  "uptime": 229999
+}
+
+
+vs get-pods-with-stats doesn;t show cpu, streams ram, etc...those are more for someone to see for their own machine not public really...but maybe well expose some prometeus metrics at some point...but shows some stats for all nodes in gossip right now
+curl -X POST http://216.234.134.5:6000/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+  "jsonrpc": "2.0",
+  "method": "get-pods-with-stats",
+  "id": 1
+}' | jq
+
+results:
+{
+  "pods": [
+    {
+      "address": "173.212.207.32:9001",
+      "is_public": true,
+      "last_seen_timestamp": 1765990015,
+      "pubkey": "EcTqXgB6VJStAtBZAXcjLHf5ULj41H1PFZQ17zKosbhL",
+      "rpc_port": 6000,
+      "storage_committed": 340000000000,
+      "storage_usage_percent": 4.6764705882352943e-7,
+      "storage_used": 1590,
+      "uptime": 220178,
+      "version": "0.8.0"
+    },
+    {
+      "address": "46.250.252.209:9001",
+      "is_public": false,
+      "last_seen_timestamp": 1765990008,
+      "pubkey": "BFvbsSGUAhPzhiZhK1PVQvX5fd1Prhog7Dpkgbo9QpQV",
+      "rpc_port": 6000,
+      "storage_committed": 175000000000,
+      "storage_usage_percent": 0.000053076571428571424,
+      "storage_used": 92884,
+      "uptime": 255130,
+      "version": "0.8.0"
+    },
+    {
+      "address": "203.184.40.164:19074",
+      "is_public": true,
+      "last_seen_timestamp": 1765990020,
+      "pubkey": "CXDzKedk9unSYdZG7xMRw6ahSuuztX7ZDHh83vNqekm1",
+      "rpc_port": 6000,
+      "storage_committed": 30737418240,
+      "storage_usage_percent": 0.0000026449846686928513,
+      "storage_used": 813,
+      "uptime": 238966,
+      "version": "0.8.0"
+    },
+...
+Ymetro
+
+ — 17/12/2025, 19:05
+Check if everything is running and accessible with this script: podminicheck.sh. 
+Make it executable with 
+chmod +x podminicheck.sh
+#!/usr/bin/env bash
+set -euo pipefail
+echo Updating the local package index for curl, netcat and jq requirements
+sudo apt-get update -y > /dev/null
+sudo apt-get install -y curl netcat-openbsd jq > /dev/null
+echo
+Expand
+podminicheck.sh
+3 KB
+tobytobias — 17/12/2025, 19:29
+thanks. done
+where i'm at currently:
+
+[2025-12-17 18:29:16] INFO [pod::storage:143] - Opening storage file at: /run/xandeum-pod
+Error: Symlinked File not Found : /run/xandeum-pod
+
+unable to see a guide to setup xandeum-pod storage, if any. I can't seem to start pod
+tobytobias — 17/12/2025, 19:37
+/run/xandeum-pod is a symbolic link to /xandeum-pages. Is there a doc link that explains how to setup xandeum-pages?
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 21:04
+It might be in the docs now...here is the command...
+⁠devnet-developer-support⁠
+tobytobias — 17/12/2025, 23:10
+@Brad|Xandeum I'm NOT DM'ing YOU I'm currently running the pNode. It seem to not have the details I'm looking for. It seems like I can't get any information on the network topology by querying the pNode. If I run the vNode, can I get such information? Is there any way to retrieve how nodes send gossip messages to each other?
+Brad|Xandeum I'm NOT DM'ing YOU — 17/12/2025, 23:11
+what network topology are you thinking of?
+tobytobias — 17/12/2025, 23:18
+Sorry I don't understand your question. What I'm saying is I want to build a graph of how message is exchanged through out the network. I plan to use how nodes connect to one another in this network to determine that.
+Naga — 17/12/2025, 23:20
+Thanks! I tried reaching the pRPC endpoint on the node at 216(dot)234(dot)134(dot)5 port 6000 but I’m getting an “Access denied” response.
+Is IP whitelisting required, or is there a CORS-enabled/public endpoint suitable for web apps?
+Ymetro
+
+ — 18/12/2025, 02:11
+I devised a curl command  line for local nodes that shows what pNodes are publicly available ending with a total count.
+Please replace "127.0.0.1" to a publicly available pNode IP address when you're not running a node yourself (but then again you have to somehow acquire one 😉): 
+curl -X POST http://127.0.0.1:6000/rpc \
+                          -H "Content-Type: application/json" \
+                          -d '{
+                            "jsonrpc": "2.0",
+                            "method": "get-pods-with-stats",
+                            "id": 1
+                          }' |
+                     jq . |                                   
+                     grep -B1 '"is_public": true' |
+                     grep '"address"' |
+                     tee /dev/tty |
+                     wc -l |
+                     awk '{print "Total public nodes:", $1}'
+ 
+Port numbers are added, because a few are on nonstandard ports (not on port 9001).
+So devs can pick one to call.
+Davethompson ☕ — 18/12/2025, 08:10
+
+user@MacBookPro ~ % >....                                                                                                    
+                            "jsonrpc": "2.0",
+                            "method": "get-pods-with-stats",
+                            "id": 1
+                          }' |
+                     jq . |
+                     grep -B1 '"is_public": true' |
+                     grep '"address"' |
+                     tee /dev/tty |
+                     wc -l |
+                     awk '{print "Total public nodes:", $1}'
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (7) Failed to connect to 127.0.0.1 port 6000 after 0 ms: Couldn't connect to server
+Total public nodes: 0
+user@MacBookPro ~ %   
+Jabes Nelma — 18/12/2025, 08:37
+"What is the public devnet pRPC endpoint for the bounty?".
+tobytobias — 18/12/2025, 08:42
+@Brad|Xandeum I'm NOT DM'ing YOU When I tried to registerPNode. The contract panicked: 
+
+{"message":"Simulation failed. \nMessage: Transaction simulation failed: Error processing Instruction 0: Program failed to complete. \nLogs: \n[\n  \"Program 6Bzz3KPvzQruqBg2vtsvkuitd6Qb4iCcr5DViifCwLsL invoke [1]\",\n  \"Program log: Instruction : RegisterPnode\",\n  \"Program 11111111111111111111111111111111 invoke [2]\",\n  \"Program 11111111111111111111111111111111 success\",\n  \"Program log: panicked at src/state.rs:174:14:\\ncalled Result::unwrap() on an Err value: DataTypeMismatch\",\n  \"Program 6Bzz3KPvzQruqBg2vtsvkuitd6Qb4iCcr5DViifCwLsL consumed 7208 of 200000 compute units\",\n  \"Program 6Bzz3KPvzQruqBg2vtsvkuitd6Qb4iCcr5DViifCwLsL failed: SBF program panicked\"\n]. \nCatch the SendTransactionError and call getLogs() on it for full details."} 
+Ymetro
+
+ — 18/12/2025, 10:00
+Hi. With "127.0.0.1" you're calling your local system, that has no node running. Please pick one of the public nodes, mentioned earlier, for results. 
+I run this command on the nodes themselves, hence the "localhost" (127.0.0.1) in the call. 
+gol.D.roger — 18/12/2025, 10:37
+Please can I get more known pNodes than the already provided one 
+Or is there somewhere I can get them from
+I'm stuck at 202 pNodes fetched
+gol.D.roger — 18/12/2025, 10:48
+Why was I removed from the tickets?
+Naga — 18/12/2025, 11:02
+From your command output, could you share a couple of the public node IPs? I need one with is_public: true to call get-pods-with-stats from my web app.
+Naga — 18/12/2025, 11:16
+Guys, can someone helpme on this deadline is near
+Ymetro
+
+ — 18/12/2025, 12:17
+Sorry, not at a PC rn. Check ⁠devnet-developer-support⁠ for mentions of “true”. 2 are mentioned. 
+Ymetro
+
+ — 18/12/2025, 12:27
+Okay. Here are a few public ones I just fetched from gossip. 🐶
+   "address": "192.190.136.36:9001",
+        "address": "45.84.138.15:9001",
+        "address": "173.249.3.118:9001",
+        "address": "84.21.171.129:9001",
+        "address": "161.97.185.116:9001",
+        "address": "154.38.169.212:9001",
+        "address": "152.53.155.15:9001",
+        "address": "154.38.185.152:9001",
+        "address": "173.212.220.65:9001",
+        "address": "173.249.59.66:9001",
+        "address": "45.151.122.60:9001",
+        "address": "152.53.236.91:9001",
+        "address": "192.190.136.29:9001",
+        "address": "173.249.54.191:9001",
+        "address": "45.151.122.71:9001",
+        "address": "192.190.136.28:9001",
+ 
+david354_bitSmiley — 18/12/2025, 14:55
+Is pnodes not run as https server?
+Ymetro
+
+ — 18/12/2025, 14:56
+No, http. No certs needed.
+Brad|Xandeum I'm NOT DM'ing YOU — 18/12/2025, 14:58
+I dont recognize where that error is from...but Did you run the fallocate command?
+⁠devnet-developer-support⁠
+tobytobias — 18/12/2025, 15:15
+yes we did, the pod and all stuff is running fine... we just want to be registered
+Brad|Xandeum I'm NOT DM'ing YOU — 18/12/2025, 15:24
+Let me look at that, I believe it becomes obsolete with the launch of the assignment portal
+Bhondu Lannister — 18/12/2025, 18:52
+How do we get the historical data of nodes
+Brad|Xandeum I'm NOT DM'ing YOU — 18/12/2025, 18:53
+that needs to be build by devs...we only have live date (excpt for earned credits)
+eventually we will build some functionality of history...
+tobytobias — 18/12/2025, 19:24
+y’know… being here and seeing how much work there is to do, and how transformative this project can be, makes me willing to contribute.
+Brad|Xandeum I'm NOT DM'ing YOU — 18/12/2025, 20:15
+We've been building this for a while now...but we're still EARLY in this! Happy to have you here!
+Brad|Xandeum I'm NOT DM'ing YOU — 18/12/2025, 20:17
+What other projects do you work on? I see some common channels...
+tobytobias — 18/12/2025, 22:09
+i can see SNS yeah... currently a badged ambassador and i got a grant w/ them to write a port of their js/ts sdk to Go.
+
+also doing sth similar w/ meteora buh i'm a market(liquidity pools) person and prediction market seems juicy atm.
+Brad|Xandeum I'm NOT DM'ing YOU — 18/12/2025, 22:43
+very cool...lots of work everywhere!
+Don Vicks — 19/12/2025, 09:34
+gm gm, 
+please am i the only one that noticed the pnode rpc's are kinda down?
+Ymetro
+
+ — 19/12/2025, 10:34
+Nope. saloni noticed as well.
+I'll have a looksy
+Ymetro
+
+ — 19/12/2025, 10:45
+Forwarded
+Is the DevNet node currently down for maintenance? 
+Or has the public RPC endpoint changed?
+#💡apps-developers  •  Friday
+Maybe the public open node went private or down. Here is a fresh part of public ones list. 
+        "address": "173.212.207.32:9001",
+        "address": "152.53.236.91:9001",
+        "address": "62.171.138.27:9001",
+        "address": "89.123.115.81:9001",
+        "address": "45.151.122.77:9001",
+        "address": "161.97.185.116:9001",
+        "address": "192.190.136.28:9001",
+        "address": "89.123.115.79:9001",
+        "address": "154.38.171.140:9001",
+        "address": "154.38.170.117:9001",
+        "address": "152.53.155.15:9001",
+        "address": "45.151.122.60:9001",
+        "address": "173.249.3.118:9001",
+        "address": "216.234.134.5:9001",
+        "address": "161.97.97.41:9001",
+        "address": "62.171.135.107:9001",
+        "address": "173.212.220.65:9001",
+        "address": "192.190.136.38:9001",
+        "address": "207.244.255.1:9001", 
+The pNode net seems fine.
+Pick a few to have redundancy failover.
+tobytobias — 19/12/2025, 13:27
+gm, what is the Atlas repo for?
+sungjinwoo
+
+ — 19/12/2025, 13:43
+Yo
+I'm done with this analytics dashboard
+But im stuck at this point like the pNodes, it should refresh after how much second ?
+right now i am keeping it at 20sec, but because of that, the page becomes kinda laggy and also the map part(i tried some other way, and i think it's good).
+takes little bit time but I guess better than not showing a map.
+so should I go with 30-40sec
+or some other way
+Bobby1337
+
+ — 19/12/2025, 14:21
+@ShanX
+Ymetro
+
+ — 19/12/2025, 14:32
+Got you untime-outed...
+Bobby1337
+
+ — 19/12/2025, 14:32
+i forgot about the links thank you
+Ymetro
+
+ — 19/12/2025, 14:32
+Sure thing
+Bobby1337
+
+ — 19/12/2025, 14:33
+[Collector] ⚠️  Very low success rate (0.0%). This may indicate:
+   
+Network connectivity issues
+pNodes are offline or behind firewalls
+Incorrect IP addresses in database
+What is the standard pRPC port for Xandeum pNodes? 
+I'm using port 6000, but some nodes aren't responding. 
+Are there different ports for different node versions, or do some nodes use non-standard ports?
+Ymetro
+
+ — 19/12/2025, 14:35
+Most pNode are in private mode. You can get one of the list here  ⁠devnet-developer-support⁠ and fetch some more public ones with ⁠devnet-developer-support⁠ when you replace '127.0.0.1' with a public open node.
+Ymetro
+
+ — 19/12/2025, 14:36
+Port 6000 is the right port for the pRPC.
+Bobby1337
+
+ — 19/12/2025, 14:36
+oh thank you!!!
+Ymetro
+
+ — 19/12/2025, 14:37
+The ports in the list are ports used to connect them to their own gossip network. RP calls go to one of the nodes that have port 6000 public.
+I've should have mentioned that the ports shown in the list are for gossip, not pRP calls.
+Ymetro
+
+ — 19/12/2025, 14:38
+Also: to get a bit less info on all the nodes use get-pod-with-stats in the call.
+I call it less bc the most stats are shown with the get-stats call, but that is only possible on public nodes.
+Bobby1337
+
+ — 19/12/2025, 14:40
+Thank you for the assistanceee
+Ymetro
+Ymetro
+ pinned a message to this channel. See all pinned messages. — 19/12/2025, 14:41
+Ymetro
+Ymetro
+ pinned a message to this channel. See all pinned messages. — 19/12/2025, 14:42
+Starlight ✨ | ₿ — 19/12/2025, 15:00
+How to obtain credits earned by a node? Is there an endpoint or math for deriving it?
+Brad|Xandeum I'm NOT DM'ing YOU — 19/12/2025, 15:05
+⁠devnet-developer-support⁠
+Ymetro
+
+ — 19/12/2025, 15:06
+Call https:// podcredits.xandeum.network/api/pods-credits
+Starlight ✨ | ₿ — 19/12/2025, 15:07
+Ok
+Thanks
+Hickson.dev — 19/12/2025, 15:13
+how often do the credits change, is it monthly ? @Brad|Xandeum I'm NOT DM'ing YOU
+Brad|Xandeum I'm NOT DM'ing YOU — 19/12/2025, 15:14
+Every 30 seconds it probably changes
+Don Vicks — 19/12/2025, 15:15
+Thanks man, literally started looking at my code lol
+Hickson.dev — 19/12/2025, 15:17
+like does it add up when it changes or we add it ourselves
+Ymetro
+
+ — 19/12/2025, 15:17
+⁠💡apps-developers⁠
+Hickson.dev — 19/12/2025, 15:20
+ok thanks
+Ymetro
+
+ — 19/12/2025, 16:48
+⁠devnet-developer-support⁠ @Brad|Xandeum I'm NOT DM'ing YOU ?
+Brad|Xandeum I'm NOT DM'ing YOU — 19/12/2025, 18:22
+I didn't know what's causing it to lag...
+Might need caching? 
+Might need less updates? 
+Maybe on demand vs real time updates? 
+
+Maybe need to stagger what updates.... Batches of 10 maybe?
+Ymetro
+
+ — 19/12/2025, 18:25
+Yo @sungjinwoo ☝️
+sungjinwoo
+
+ — 19/12/2025, 18:27
+Batches of 10 is good, but that way user will have to click that next next again and again(which is kinda annoying)
+Also I've added caching.
+And fixed re renders.
+now it works 10x better than before.
+sungjinwoo
+
+ — 19/12/2025, 18:27
+Thanks broh 👑
+Davethompson ☕ — Yesterday at 01:03
+Hey guys do we have any rpc that can be accessible via vercel or public
+@Ymetro
+Ymetro
+
+ — Yesterday at 01:14
+Do you mean more public IPs? Here is a few: ⁠devnet-developer-support⁠
+minus the port number. That stays on 6000 for RPC. 
+I'm not familiar with Vercel. 
+All the calls are get-pods, get-pods-with-stats and get-stats (only on public ones), AFAIKO. 
+Furthermore there is the https://podcredits.xandeum.network/api/pods-credits API for the credits. 
+YAGPDB.xyz
+APP
+ — Yesterday at 05:55
+@Davethompson ☕
+Automoderator:
+You have been warned. Links are not allowed by new members. Violation Logged.
+@Davethompson ☕
+Automoderator:
+You have been warned. Links are not allowed by new members. Violation Logged.
+Ymetro
+
+ — Yesterday at 09:16
+Woops! Something seems to look like a link. You can also take a screenshot of a link and post it here, remove the https part or break it up into parts. As long as it isn't directly clickable, @Davethompson ☕
+Ymetro
+
+ — Yesterday at 10:49
+A little ramble of mine. I hope you can see what I mean. - 
+I wonder if the implementation of uptime is a good one. Most choose to "cure" it over time from 0 to 100%, but I think its the other way around: 100% when up and penalize when down for more than x minutes, and then cure over time. Just like in Uptime Kuma for example. Add a total, yearly and monthly history graph to check past performance. Not only Pod, Xandminer and Xandminerd needs to be updated and restarted, causing a rather long time to get good level of that reputational uptime buildup, but the underlying platform must also be updated regularly, to prevent system instability and security breaches. Ubuntu Pro does some live patching to keep downtime to a minimum, but sometimes a restart is needed. I think system maintenance, being up-to-date and secure also has a factor in reliability and performance of the node. - ramble end. 
+codex — Yesterday at 10:58
+Sent a dm @Brad|Xandeum I'm NOT DM'ing YOU
+Substance 2.42 — Yesterday at 11:32
+My opinion, if I understand correctly :-), is that I won't invent some questionable formula to calculate e.g. reliability - just raw pRPC data and history graphs, done. And collect only data that are available for all pNodes, so no CPUs etc. - there will be none or almost none public pRPCs, current state is temporary devnet anomaly, you'll see. Or for example, how often would one check if pNode is online, every second? Good luck with that.
+Also, xandminer(d) are irrelevant, they don't have to run at all.
+david354_bitSmiley — Yesterday at 11:39
+Has anyone succes fully build the platform, can someone share here for the demo
+Ymetro
+
+ — Yesterday at 11:39
+There are some in ⁠💬general
+Davethompson ☕ — Yesterday at 15:34
+works with my in my localhost
+Image
+Davethompson ☕ — Yesterday at 15:35
+but won't work with my vercel only localhost
+Ymetro
+
+ — Yesterday at 16:19
+Sorry, my programming level ain't that high to help. What's TS? Maybe @Brad|Xandeum I'm NOT DM'ing YOU can help?
+Leo says: 
+
+Key Causes and Fixes
+
+Environment Variables Not Set in Vercel
+
+Local environment variables (e.g., API keys, base URLs) are not automatically available on Vercel. You must manually add them in the Vercel dashboard or CLI.
+→ Use process.env.API_URL instead of hardcoded values and ensure all secrets are configured in Vercel’s project settings.
+
+Relative vs. Absolute URLs
+
+Using relative URLs (e.g., /api/data) works locally because they resolve to localhost. On Vercel, you must use absolute URLs (e.g., https://yourdomain.com/api/data).
+→ Construct URLs dynamically:
+const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL 
+  ? https://${process.env.NEXT_PUBLIC_VERCEL_URL} 
+  : 'http://localhost:3000/';
+const res = await fetch(${baseUrl}/api/data);
+
+Outbound Requests Blocked or Misconfigured
+
+Vercel allows outbound HTTP requests, but some third-party APIs may block requests based on headers, CORS, or IP reputation.
+→ Ensure your API accepts requests from external domains and verify headers (e.g., User-Agent, Authorization) are correctly set.
+
+Serverless Function Timeouts or Errors
+
+Vercel serverless functions have execution limits (10s for Hobby, 60s Pro). Long-running or unhandled API calls may fail silently.
+→ Add error handling and logging to debug failures. 
+Ymetro
+
+ — Yesterday at 16:27
+So TS is "TypeScript, a programming language that extends JavaScript by adding static typing and other features." - Okay..
+Davethompson ☕ — Yesterday at 17:03
+extended version of javascript but with type safety and security
+Davethompson ☕ — Yesterday at 17:42
+easy way to fix is by using a domain/sub domain
+work work using raw IP
+Ymetro
+
+ — Yesterday at 19:57
+=============================================
+
+Please post all NON-VETTED Apps Links Only in ⁠💡apps-developers Channel and request it to be looked over,
+
+And possibly get them added into the ⁠➡️-community-apps 
+If it looks useful and safe at first look, It might get included.
+
+Include a Bio (github, website, telegram, linked-in, x.com, etc) to be considered...
+
+Do not link to any sites that look to be Xandeum, but then redirect to your own site!
+You have your own identity, don't pretend to be us or get banned!
+
+Thanks,
+❤️ Xandeum Community
+
+=============================================
+Ninja0x
+
+ — 00:42
+@Brad|Xandeum I'm NOT DM'ing YOU wondering how you get your number for storage used on your dashboard cause I don't get that number at all 
+Ninja0x
+
+ — 00:43
+sure scammer 😄
+Brad|Xandeum I'm NOT DM'ing YOU — 02:20
+most of the data used right now is on a test rig...but you can convert the storage_used field from bytes to MB for all the pods...
+curl -X POST http://192.190.136.28:6000/rpc \
+  -H "Content-Type: application/json" \
+  -d '{
+  "jsonrpc": "2.0",
+  "method": "get-pods-with-stats",
+  "id": 1
+}' | jq
+
+example:
+    {
+      "address": "94.255.130.13:12864",
+      "is_public": false,
+      "last_seen_timestamp": 1766278388,
+      "pubkey": "8PjjPkizL4JZ54sPzNdXP99XyegcXrayv7rpfAY8EdzB",
+      "rpc_port": 6000,
+      "storage_committed": 17540000000000,
+      "storage_usage_percent": 1.655074116305587e-8,
+      "storage_used": 2903,
+      "uptime": 230679,
+      "version": "0.8.0"
+    },
+
+We'll be releasing more in the coming weeks where users will be able to put data on chain as our MVP (minimally viable product) will go live as the full working proof of concept.
+Ninja0x
+
+ — 03:34
+Im working on a my dashboard for the bounty, I just want everything to be as polished as possible and not release a basic mvp
+I want something ready to scale
+HJ24
+
+ — 08:31
+Hey bro need a help actually I was also working on my dashboard and while setting up backend my dashboard works good but later on it suddenly stops showing real data can I come to know how you are setting it up means port usage and ips that you are rooting in it and is there any update in ips or I am thinking to show some defined number nodes 
+can you please help me out bro
+Ymetro
+
+ — 08:44
+A fresh can of the public node IPs: 
+        "address": "157.173.125.223:9001",
+        "address": "157.173.197.106:9001",
+        "address": "161.156.85.177:9001",
+        "address": "194.238.24.91:9001",
+        "address": "157.173.197.103:9001",
+        "address": "194.238.24.87:9001",
+        "address": "154.38.175.38:9001",
+        "address": "194.238.24.94:9001",
+        "address": "194.238.24.96:9001",
+        "address": "37.60.250.209:9001",
+        "address": "37.60.255.42:9001",
+        "address": "194.238.24.95:9001",
+        "address": "38.242.207.242:9001",
+        "address": "109.199.96.218:9001",
+        "address": "194.238.24.97:9001",
+        "address": "160.202.38.95:58531",
+Total public nodes: 65 
+Remember: ignore the port part; pRPC's are on port 6000.
+HJ24
+
+ — 08:48
+Bro if I make possible such that only this amount of nodes live on my analytical dashboard then it will be ok as making mvp so trying to reduce redundancy and showing less number as sometimes it also goes offline or we get problems in hosting as well
+Ymetro
+
+ — 08:53
+I'm not quite sure what you are saying, but if you want that list yourself use 
+curl -X POST http://127.0.0.1:6000/rpc \
+                          -H "Content-Type: application/json" \
+                          -d '{
+                            "jsonrpc": "2.0",
+                            "method": "get-pods-with-stats",
+                            "id": 1
+                          }' |
+                     jq . |                                   
+                     grep -B1 '"is_public": true' |
+                     grep '"address"' |
+                     tee /dev/tty |
+                     wc -l |
+                     awk '{print "Total public nodes:", $1}'
+ 
+And replace the '127.0.0.1' part with one of the IPs I listed.

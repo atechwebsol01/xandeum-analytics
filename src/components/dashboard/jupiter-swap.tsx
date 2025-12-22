@@ -3,13 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftRight, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowLeftRight, ExternalLink, Loader2, Wallet } from "lucide-react";
 
 declare global {
   interface Window {
     Jupiter: {
       init: (config: JupiterConfig) => void;
       close: () => void;
+      _instance?: unknown;
     };
   }
 }
@@ -37,36 +38,25 @@ interface JupiterConfig {
 export function JupiterSwap() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const terminalRef = useRef<HTMLDivElement>(null);
+  const [isReady, setIsReady] = useState(false);
   const initAttemptedRef = useRef(false);
 
   useEffect(() => {
-    // Only run on client
     if (typeof window === "undefined") return;
 
     let isMounted = true;
     let checkJupiterInterval: NodeJS.Timeout | null = null;
     let loadTimeout: NodeJS.Timeout | null = null;
-    let retryTimeout: NodeJS.Timeout | null = null;
 
     const initJupiter = () => {
-      if (!window.Jupiter || isInitialized || !isMounted || initAttemptedRef.current) return;
-
-      // Verify element exists
-      const element = terminalRef.current || document.getElementById("jupiter-terminal");
-      if (!element) {
-        // Retry after a short delay
-        retryTimeout = setTimeout(initJupiter, 200);
-        return;
-      }
+      if (!window.Jupiter || !isMounted || initAttemptedRef.current) return;
 
       initAttemptedRef.current = true;
 
       try {
+        // Use modal mode - doesn't require a target element, avoids race conditions
         window.Jupiter.init({
-          displayMode: "integrated",
-          integratedTargetId: "jupiter-terminal",
+          displayMode: "modal",
           endpoint: process.env.NEXT_PUBLIC_HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com",
           strictTokenList: false,
           defaultExplorer: "solscan",
@@ -75,12 +65,8 @@ export function JupiterSwap() {
             initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
             swapMode: "ExactIn",
           },
-          containerStyles: {
-            maxHeight: "600px",
-            minHeight: "400px",
-          },
         });
-        setIsInitialized(true);
+        setIsReady(true);
         setIsLoading(false);
       } catch (err) {
         console.error("Jupiter init error:", err);
@@ -91,20 +77,10 @@ export function JupiterSwap() {
     };
 
     const loadJupiterTerminal = () => {
-      // Wait for DOM element to be ready
-      const targetElement = terminalRef.current || document.getElementById("jupiter-terminal");
-      if (!targetElement) {
-        // Retry after a short delay - element should be mounted soon
-        retryTimeout = setTimeout(loadJupiterTerminal, 100);
-        return;
-      }
-
       try {
-        // Check if Jupiter is already loaded and initialized
+        // Check if Jupiter is already loaded
         if (window.Jupiter) {
-          if (!isInitialized && !initAttemptedRef.current) {
-            initJupiter();
-          }
+          initJupiter();
           return;
         }
 
@@ -122,16 +98,13 @@ export function JupiterSwap() {
           script.src = "https://terminal.jup.ag/main-v2.js";
           script.async = true;
           script.onload = () => {
-            // Wait for Jupiter to be available on window
             checkJupiterInterval = setInterval(() => {
               if (window.Jupiter && isMounted) {
                 if (checkJupiterInterval) clearInterval(checkJupiterInterval);
-                // Delay to ensure DOM is fully ready
-                setTimeout(initJupiter, 300);
+                setTimeout(initJupiter, 50);
               }
-            }, 100);
+            }, 50);
 
-            // Timeout after 15 seconds
             loadTimeout = setTimeout(() => {
               if (checkJupiterInterval) clearInterval(checkJupiterInterval);
               if (!window.Jupiter && isMounted) {
@@ -148,17 +121,17 @@ export function JupiterSwap() {
           };
           document.body.appendChild(script);
         } else {
-          // Script exists but Jupiter might not be ready yet
+          // Script tag exists - wait for Jupiter to be ready
           checkJupiterInterval = setInterval(() => {
             if (window.Jupiter && isMounted) {
               if (checkJupiterInterval) clearInterval(checkJupiterInterval);
-              setTimeout(initJupiter, 300);
+              setTimeout(initJupiter, 50);
             }
-          }, 100);
+          }, 50);
 
           loadTimeout = setTimeout(() => {
             if (checkJupiterInterval) clearInterval(checkJupiterInterval);
-            if (!isInitialized && isMounted) {
+            if (!isReady && isMounted) {
               setError("Jupiter Terminal failed to initialize");
               setIsLoading(false);
             }
@@ -173,21 +146,33 @@ export function JupiterSwap() {
       }
     };
 
-    // Use multiple frames to ensure DOM is fully painted and stable
-    const rafId = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setTimeout(loadJupiterTerminal, 200);
-      });
-    });
+    // Start loading after a small delay to ensure component is mounted
+    const timeoutId = setTimeout(loadJupiterTerminal, 100);
 
     return () => {
       isMounted = false;
-      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
       if (checkJupiterInterval) clearInterval(checkJupiterInterval);
       if (loadTimeout) clearTimeout(loadTimeout);
-      if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [isInitialized]);
+  }, [isReady]);
+
+  const openSwapModal = () => {
+    if (window.Jupiter) {
+      // Re-init opens the modal
+      window.Jupiter.init({
+        displayMode: "modal",
+        endpoint: process.env.NEXT_PUBLIC_HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com",
+        strictTokenList: false,
+        defaultExplorer: "solscan",
+        formProps: {
+          initialInputMint: "So11111111111111111111111111111111111111112",
+          initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          swapMode: "ExactIn",
+        },
+      });
+    }
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -208,7 +193,7 @@ export function JupiterSwap() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-6">
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -227,12 +212,28 @@ export function JupiterSwap() {
             </Button>
           </div>
         )}
-        <div
-          id="jupiter-terminal"
-          ref={terminalRef}
-          className={isLoading || error ? "hidden" : ""}
-          style={{ minHeight: "400px" }}
-        />
+        {isReady && !error && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-6">
+            <div className="text-center space-y-2">
+              <Wallet className="h-16 w-16 mx-auto text-primary opacity-80" />
+              <h3 className="text-xl font-semibold">Ready to Swap</h3>
+              <p className="text-muted-foreground max-w-md">
+                Jupiter Terminal is loaded and ready. Click the button below to open the swap interface.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              onClick={openSwapModal}
+              className="gap-2 px-8"
+            >
+              <ArrowLeftRight className="h-5 w-5" />
+              Open Swap Terminal
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Best rates across all Solana DEXes
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
