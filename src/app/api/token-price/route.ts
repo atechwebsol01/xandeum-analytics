@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-// XAND token mint address on Solana
-const XAND_MINT = "XANDnSwSXpZHL8f2fvqJZCYyaKpGGPo6aNDawfjtdgP";
+// XAND token mint address on Solana (official)
+const XAND_MINT = "XANDuUoVoUqniKkpcKhrxmvYJybpJvUxJLr21Gaj3Hx";
 
 // Cache for token data
 let cachedData: {
