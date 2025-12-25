@@ -44,11 +44,16 @@ const LOCK_PERIODS = [
 export function StakingCalculator() {
   const [solAmount, setSolAmount] = useState<string>("100");
   const [selectedPeriod, setSelectedPeriod] = useState(90);
-  const [solPrice, setSolPrice] = useState(180);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(true);
+  const [priceError, setPriceError] = useState(false);
 
-  // Fetch real SOL price
+  // Fetch real SOL price - NO fake fallbacks
   useEffect(() => {
     const fetchSolPrice = async () => {
+      setPriceLoading(true);
+      setPriceError(false);
+      
       // Try our API first
       try {
         const response = await fetch("/api/sol-price");
@@ -56,6 +61,7 @@ export function StakingCalculator() {
           const data = await response.json();
           if (data.price && data.price > 0) {
             setSolPrice(data.price);
+            setPriceLoading(false);
             return;
           }
         }
@@ -72,11 +78,17 @@ export function StakingCalculator() {
           const data = await response.json();
           if (data?.solana?.usd) {
             setSolPrice(data.solana.usd);
+            setPriceLoading(false);
+            return;
           }
         }
       } catch {
-        // Keep default price
+        // CoinGecko failed too
       }
+      
+      // All APIs failed
+      setPriceLoading(false);
+      setPriceError(true);
     };
     fetchSolPrice();
     // Refresh every 30 seconds
@@ -101,10 +113,11 @@ export function StakingCalculator() {
     const periodRewards = amount * dailyRate * selectedPeriod;
     const yearlyRewards = amount * (effectiveApy / 100);
     
-    // USD values
-    const stakingValueUsd = amount * solPrice;
-    const periodRewardsUsd = periodRewards * solPrice;
-    const yearlyRewardsUsd = yearlyRewards * solPrice;
+    // USD values (use 0 if price not available)
+    const price = solPrice || 0;
+    const stakingValueUsd = amount * price;
+    const periodRewardsUsd = periodRewards * price;
+    const yearlyRewardsUsd = yearlyRewards * price;
 
     return {
       tier,
@@ -115,7 +128,7 @@ export function StakingCalculator() {
       periodRewardsUsd,
       yearlyRewardsUsd,
       dailyRewards: amount * dailyRate,
-      dailyRewardsUsd: amount * dailyRate * solPrice,
+      dailyRewardsUsd: amount * dailyRate * price,
     };
   }, [solAmount, selectedPeriod, solPrice]);
 
@@ -159,8 +172,16 @@ export function StakingCalculator() {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            ≈ ${calculations.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
-            <span className="ml-2 text-violet-500">(SOL @ ${solPrice.toFixed(2)})</span>
+            {priceLoading ? (
+              <span className="text-muted-foreground">Loading price...</span>
+            ) : priceError || !solPrice ? (
+              <span className="text-red-500">Price unavailable - check connection</span>
+            ) : (
+              <>
+                ≈ ${calculations.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
+                <span className="ml-2 text-violet-500">(SOL @ ${solPrice.toFixed(2)})</span>
+              </>
+            )}
           </p>
         </div>
 
@@ -219,7 +240,7 @@ export function StakingCalculator() {
                 {calculations.dailyRewards.toFixed(4)} SOL
               </p>
               <p className="text-xs text-muted-foreground">
-                ≈ ${calculations.dailyRewardsUsd.toFixed(2)}
+                {solPrice ? `≈ $${calculations.dailyRewardsUsd.toFixed(2)}` : "USD: N/A"}
               </p>
             </div>
             
@@ -229,7 +250,7 @@ export function StakingCalculator() {
                 {calculations.periodRewards.toFixed(4)} SOL
               </p>
               <p className="text-xs text-muted-foreground">
-                ≈ ${calculations.periodRewardsUsd.toFixed(2)}
+                {solPrice ? `≈ $${calculations.periodRewardsUsd.toFixed(2)}` : "USD: N/A"}
               </p>
             </div>
           </div>
@@ -240,7 +261,9 @@ export function StakingCalculator() {
               {calculations.yearlyRewards.toFixed(4)} SOL
             </p>
             <p className="text-sm text-muted-foreground">
-              ≈ ${calculations.yearlyRewardsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
+              {solPrice 
+                ? `≈ $${calculations.yearlyRewardsUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD`
+                : "USD value unavailable"}
             </p>
           </div>
         </div>

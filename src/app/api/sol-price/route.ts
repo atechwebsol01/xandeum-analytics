@@ -62,10 +62,18 @@ export async function GET() {
     // DexScreener failed
   }
 
-  // Return cached or reasonable default
+  // Return cached price or error (NO fake fallback)
+  if (cachedPrice && cachedPrice > 0) {
+    return NextResponse.json({ 
+      price: cachedPrice,
+      cached: true,
+      stale: true
+    });
+  }
+
+  // No price available - return error
   return NextResponse.json({ 
-    price: cachedPrice || 185,
-    cached: true,
-    fallback: !cachedPrice
-  });
+    price: null,
+    error: "Unable to fetch SOL price"
+  }, { status: 503 });
 }
