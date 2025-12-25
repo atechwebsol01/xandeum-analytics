@@ -336,6 +336,22 @@ export function Sidebar({ className }: SidebarProps) {
           </div>
         )}
 
+        {/* Restart Tour */}
+        {!collapsed && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground"
+            onClick={() => {
+              localStorage.removeItem("xandeum-tour-v8");
+              window.location.reload();
+            }}
+            type="button"
+          >
+            🎯 Restart Tour
+          </Button>
+        )}
+
         {/* Expand button when collapsed */}
         {collapsed && (
           <Button
