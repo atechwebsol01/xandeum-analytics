@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,8 +13,11 @@ import {
   Globe,
   RefreshCw,
   Coins,
+  Activity,
+  TrendingUp,
+  Zap,
+  Calendar,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { usePNode } from "@/hooks/use-pnodes";
+import { supabase } from "@/lib/supabase";
 import {
   cn,
   formatBytes,
@@ -38,6 +42,21 @@ import {
   getCreditsLevel,
 } from "@/lib/utils";
 
+interface NodeSnapshot {
+  created_at: string;
+  status: string;
+  credits: number;
+  xscore: number;
+  uptime: number;
+  storage_used: number;
+}
+
+interface HeatmapData {
+  hour: number;
+  day_of_week: number;
+  activity_count: number;
+}
+
 export default function PNodeDetailPage({
   params,
 }: {
@@ -46,6 +65,58 @@ export default function PNodeDetailPage({
   const { pubkey } = use(params);
   const { data: node, isLoading, refetch, isFetching } = usePNode(pubkey);
   const [copied, setCopied] = useState(false);
+  const [nodeHistory, setNodeHistory] = useState<NodeSnapshot[]>([]);
+  const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  // Fetch node historical data
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        setHistoryLoading(true);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const [snapshotsRes, heatmapRes] = await Promise.all([
+          supabase
+            .from("node_snapshots")
+            .select("created_at, status, credits, xscore, uptime, storage_used")
+            .eq("pubkey", pubkey)
+            .gte("created_at", sevenDaysAgo.toISOString())
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("activity_heatmap")
+            .select("hour, day_of_week, activity_count")
+            .eq("pubkey", pubkey),
+        ]);
+
+        if (snapshotsRes.data) setNodeHistory(snapshotsRes.data);
+        if (heatmapRes.data) setHeatmapData(heatmapRes.data);
+      } catch {
+        // Silent fail
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    if (pubkey) fetchHistory();
+  }, [pubkey]);
+
+  // Calculate performance metrics from history
+  const metrics = useMemo(() => {
+    if (nodeHistory.length < 2) return null;
+    
+    const onlineCount = nodeHistory.filter(s => s.status === "online").length;
+    const uptimePercent = (onlineCount / nodeHistory.length) * 100;
+    
+    const latestCredits = nodeHistory[nodeHistory.length - 1]?.credits || 0;
+    const firstCredits = nodeHistory[0]?.credits || 0;
+    const creditsGrowth = latestCredits - firstCredits;
+    
+    const avgXScore = nodeHistory.reduce((sum, s) => sum + s.xscore, 0) / nodeHistory.length;
+    
+    return { uptimePercent, creditsGrowth, avgXScore };
+  }, [nodeHistory]);
 
   const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -330,6 +401,179 @@ export default function PNodeDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance Analytics Section */}
+      {metrics && (
+        <div className="grid gap-6 sm:grid-cols-3">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg shadow-green-500/20">
+                  <Activity className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">7d Uptime</p>
+                  <p className="text-2xl font-bold">{metrics.uptimePercent.toFixed(1)}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-yellow-600 shadow-lg shadow-amber-500/20">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Credits Growth</p>
+                  <p className={cn("text-2xl font-bold", metrics.creditsGrowth >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {metrics.creditsGrowth >= 0 ? "+" : ""}{metrics.creditsGrowth.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 shadow-lg shadow-purple-500/20">
+                  <Zap className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Avg X-Score</p>
+                  <p className="text-2xl font-bold">{metrics.avgXScore.toFixed(0)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Status History Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Status History (7 Days)
+          </CardTitle>
+          <CardDescription>Node status and performance over time</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : nodeHistory.length > 0 ? (
+            <div className="space-y-4">
+              {/* Status Timeline */}
+              <div className="flex gap-1 h-8">
+                {nodeHistory.slice(-48).map((snapshot, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex-1 rounded-sm transition-all hover:scale-y-125",
+                      snapshot.status === "online" ? "bg-emerald-500" :
+                      snapshot.status === "warning" ? "bg-yellow-500" : "bg-red-500"
+                    )}
+                    title={`${new Date(snapshot.created_at).toLocaleString()} - ${snapshot.status}`}
+                  />
+                ))}
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>7 days ago</span>
+                <span>Now</span>
+              </div>
+              
+              {/* Credits Trend */}
+              <div className="pt-4 border-t">
+                <p className="text-sm font-medium mb-2">Credits Trend</p>
+                <div className="flex items-end gap-1 h-20">
+                  {nodeHistory.slice(-24).map((snapshot, i) => {
+                    const maxCredits = Math.max(...nodeHistory.slice(-24).map(s => s.credits), 1);
+                    const height = (snapshot.credits / maxCredits) * 100;
+                    return (
+                      <div
+                        key={i}
+                        className="flex-1 bg-gradient-to-t from-violet-600 to-violet-400 rounded-t transition-all hover:from-violet-500 hover:to-violet-300"
+                        style={{ height: `${Math.max(height, 5)}%` }}
+                        title={`${snapshot.credits.toLocaleString()} credits`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-32 flex flex-col items-center justify-center text-muted-foreground">
+              <Calendar className="h-8 w-8 mb-2 opacity-50" />
+              <p className="text-sm">No historical data yet</p>
+              <p className="text-xs">Data will appear as snapshots are collected</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Activity Heatmap */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Activity Heatmap
+          </CardTitle>
+          <CardDescription>Node activity patterns by hour and day</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : heatmapData.length > 0 ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-[auto_repeat(24,1fr)] gap-1 text-xs">
+                <div className="w-8" />
+                {Array.from({ length: 24 }, (_, i) => (
+                  <div key={i} className="text-center text-muted-foreground">
+                    {i % 6 === 0 ? `${i}h` : ""}
+                  </div>
+                ))}
+              </div>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, dayIndex) => (
+                <div key={day} className="grid grid-cols-[auto_repeat(24,1fr)] gap-1">
+                  <div className="w-8 text-xs text-muted-foreground flex items-center">{day}</div>
+                  {Array.from({ length: 24 }, (_, hour) => {
+                    const activity = heatmapData.find(h => h.day_of_week === dayIndex && h.hour === hour);
+                    const intensity = activity ? Math.min(activity.activity_count / 10, 1) : 0;
+                    return (
+                      <div
+                        key={hour}
+                        className={cn(
+                          "aspect-square rounded-sm transition-all",
+                          intensity === 0 ? "bg-muted" :
+                          intensity < 0.3 ? "bg-emerald-900/50" :
+                          intensity < 0.6 ? "bg-emerald-600/70" : "bg-emerald-500"
+                        )}
+                        title={`${day} ${hour}:00 - ${activity?.activity_count || 0} activities`}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+              <div className="flex items-center justify-end gap-2 pt-2 text-xs text-muted-foreground">
+                <span>Less</span>
+                <div className="flex gap-1">
+                  <div className="w-3 h-3 rounded-sm bg-muted" />
+                  <div className="w-3 h-3 rounded-sm bg-emerald-900/50" />
+                  <div className="w-3 h-3 rounded-sm bg-emerald-600/70" />
+                  <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+                </div>
+                <span>More</span>
+              </div>
+            </div>
+          ) : (
+            <div className="h-40 flex flex-col items-center justify-center text-muted-foreground">
+              <Calendar className="h-8 w-8 mb-2 opacity-50" />
+              <p className="text-sm">No activity data yet</p>
+              <p className="text-xs">Heatmap will populate over time</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Additional Info */}
       <Card>
