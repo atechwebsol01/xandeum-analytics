@@ -143,6 +143,7 @@ export function StakingCalculator() {
           </div>
           <p className="text-xs text-muted-foreground">
             ≈ ${calculations.stakingValueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD
+            <span className="ml-2 text-violet-500">(SOL @ ${solPrice.toFixed(2)})</span>
           </p>
         </div>
 

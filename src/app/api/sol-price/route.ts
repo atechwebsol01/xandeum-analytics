@@ -4,28 +4,31 @@ let cachedPrice: number | null = null;
 let lastFetch = 0;
 const CACHE_TTL = 60000; // 1 minute
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const now = Date.now();
 
   // Return cached price if still valid
   if (cachedPrice && now - lastFetch < CACHE_TTL) {
-    return NextResponse.json({ price: cachedPrice, cached: true });
+    return NextResponse.json({ price: cachedPrice, cached: true, source: "cache" });
   }
 
   // Try multiple sources for SOL price
-  const sources = [
-    fetchFromJupiter,
-    fetchFromCoinGecko,
-    fetchFromBinance,
+  const sources: Array<{ name: string; fn: () => Promise<number | null> }> = [
+    { name: "jupiter", fn: fetchFromJupiter },
+    { name: "coingecko", fn: fetchFromCoinGecko },
+    { name: "binance", fn: fetchFromBinance },
   ];
 
-  for (const fetchFn of sources) {
+  for (const { name, fn } of sources) {
     try {
-      const price = await fetchFn();
+      const price = await fn();
       if (price && price > 0) {
         cachedPrice = price;
         lastFetch = now;
-        return NextResponse.json({ price, cached: false });
+        return NextResponse.json({ price, cached: false, source: name });
       }
     } catch {
       continue;
@@ -36,6 +39,7 @@ export async function GET() {
   return NextResponse.json({ 
     price: cachedPrice || 180, 
     cached: true,
+    source: cachedPrice ? "stale-cache" : "default",
     fallback: true 
   });
 }
