@@ -10,7 +10,7 @@ import { Footer } from "@/components/footer";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { AIChat } from "@/components/dashboard/ai-chat";
 import { PWARegister } from "@/components/pwa-register";
-import { WelcomeTour } from "@/components/welcome-tour";
+import { WelcomeTour, HelpButton } from "@/components/welcome-tour";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -119,6 +119,7 @@ export default function RootLayout({
               <KeyboardShortcuts />
               <AIChat />
               <WelcomeTour />
+              <HelpButton />
               <PWARegister />
               <Toaster
                 position="bottom-right"

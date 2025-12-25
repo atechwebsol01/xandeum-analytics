@@ -286,3 +286,27 @@ export function ResetTourButton() {
     </Button>
   );
 }
+
+// Floating help button - always visible
+export function HelpButton() {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  if (!mounted) return null;
+  
+  return (
+    <button
+      onClick={() => {
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.reload();
+      }}
+      className="fixed bottom-20 left-4 z-50 w-10 h-10 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg flex items-center justify-center transition-all hover:scale-110"
+      title="Restart Tour"
+    >
+      <span className="text-lg font-bold">?</span>
+    </button>
+  );
+}
