@@ -20,8 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GlobeWrapper } from "@/components/dashboard/globe-wrapper";
 import { LiveIndicator } from "@/components/dashboard/live-indicator";
+import { NetworkWeather } from "@/components/dashboard/network-weather";
 import { usePNodes } from "@/hooks/use-pnodes";
 import { useTokenPrice } from "@/hooks/use-token-price";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { cn, formatCredits } from "@/lib/utils";
 
 export default function DashboardPage() {
@@ -33,6 +35,15 @@ export default function DashboardPage() {
   }, [data]);
   
   const stats = data?.success ? data.data.stats : null;
+
+  // Get unique IPs for geolocation
+  const nodeIps = useMemo(() => {
+    return [...new Set(nodes.map((n) => n.ip).filter(Boolean))];
+  }, [nodes]);
+
+  // Fetch geolocation data
+  const { data: geoData } = useGeolocation(nodeIps);
+  const geoMap = geoData || new Map();
   
   const totalNodes = stats?.totalNodes || 0;
   const onlineNodes = stats?.onlineNodes || 0;
@@ -40,6 +51,8 @@ export default function DashboardPage() {
     ? Math.round((onlineNodes / totalNodes) * 100 + (stats?.warningNodes || 0) / totalNodes * 50)
     : 0;
   const xandPrice = tokenData?.success ? tokenData.data.price : 0;
+  const avgXScore = stats?.averageXScore || 0;
+  const onlinePercent = totalNodes > 0 ? (onlineNodes / totalNodes) * 100 : 0;
 
   return (
     <div className="container py-6 sm:py-8 lg:py-12 px-4 space-y-8">
@@ -55,6 +68,14 @@ export default function DashboardPage() {
           Real-time monitoring for the Xandeum decentralized storage network
         </p>
       </div>
+
+      {/* Network Weather */}
+      <NetworkWeather
+        onlinePercent={onlinePercent}
+        avgXScore={avgXScore}
+        totalNodes={totalNodes}
+        isLoading={isLoading}
+      />
 
       {/* Hero Stats - 4 Key Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -150,23 +171,23 @@ export default function DashboardPage() {
       {/* 3D Globe - Hero Visualization */}
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="relative">
-            <GlobeWrapper nodes={nodes} geoData={new Map()} isLoading={isLoading} />
-            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-              <Badge variant="secondary" className="bg-background/80 backdrop-blur">
-                <Globe className="h-3 w-3 mr-1" />
-                Global Node Distribution
-              </Badge>
-              <Link href="/pnodes">
-                <Button size="sm" variant="secondary" className="bg-background/80 backdrop-blur">
-                  Explore All Nodes
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+          <GlobeWrapper nodes={nodes} geoData={geoMap} isLoading={isLoading} />
         </CardContent>
       </Card>
+      
+      {/* Globe Actions */}
+      <div className="flex items-center justify-between -mt-4">
+        <Badge variant="secondary" className="bg-background border">
+          <Globe className="h-3 w-3 mr-1" />
+          {geoMap.size > 0 ? `${geoMap.size} nodes located` : "Global Node Distribution"}
+        </Badge>
+        <Link href="/pnodes">
+          <Button size="sm" variant="outline">
+            Explore All Nodes
+            <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
+        </Link>
+      </div>
 
       {/* Quick Access Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -240,7 +261,7 @@ export default function DashboardPage() {
         </Link>
 
         {/* AI Assistant */}
-        <Link href="/analytics#chat" className="group">
+        <Link href="/chat" className="group">
           <Card className="h-full hover:shadow-lg hover:border-blue-500/50 transition-all cursor-pointer">
             <CardContent className="pt-6 space-y-4">
               <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 w-fit shadow-lg group-hover:scale-110 transition-transform">

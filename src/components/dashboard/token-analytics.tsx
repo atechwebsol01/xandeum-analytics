@@ -183,6 +183,16 @@ export function TokenAnalytics() {
               </div>
             </div>
 
+            {/* Price Chart - DexScreener Embed */}
+            <div className="rounded-lg overflow-hidden border border-border/50 bg-black/20">
+              <iframe
+                src="https://dexscreener.com/solana/XANDuUoVoUqniKkpcKhrxmvYJybpJvUxJLr21Gaj3Hx?embed=1&theme=dark&trades=0&info=0"
+                className="w-full h-[300px]"
+                title="XAND Price Chart"
+                allow="clipboard-write"
+              />
+            </div>
+
             {/* Quick Links */}
             <div className="flex gap-2 pt-1">
               <a 
@@ -200,7 +210,7 @@ export function TokenAnalytics() {
                 rel="noopener noreferrer"
                 className="text-xs text-violet-500 hover:underline"
               >
-                View Chart →
+                Full Chart on Birdeye →
               </a>
             </div>
           </>

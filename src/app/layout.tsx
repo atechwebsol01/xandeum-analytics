@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Header } from "@/components/header";
+import { Sidebar } from "@/components/sidebar";
 import { Footer } from "@/components/footer";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { AIChat } from "@/components/dashboard/ai-chat";
@@ -100,7 +100,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <TooltipProvider delayDuration={0}>
-              <div className="relative min-h-screen flex flex-col">
+              <div className="relative min-h-screen flex">
                 {/* Skip to main content link for accessibility */}
                 <a
                   href="#main-content"
@@ -108,11 +108,13 @@ export default function RootLayout({
                 >
                   Skip to main content
                 </a>
-                <Header />
-                <main id="main-content" className="flex-1" tabIndex={-1}>
-                  {children}
+                <Sidebar />
+                <main id="main-content" className="flex-1 min-h-screen overflow-auto flex flex-col" tabIndex={-1}>
+                  <div className="flex-1">
+                    {children}
+                  </div>
+                  <Footer />
                 </main>
-                <Footer />
               </div>
               <KeyboardShortcuts />
               <AIChat />

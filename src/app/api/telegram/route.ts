@@ -108,6 +108,10 @@ export async function POST(request: NextRequest) {
         await handleNetworkCommand(chatId);
       } else if (text.startsWith("/price")) {
         await handlePriceCommand(chatId);
+      } else if (text.startsWith("/top") || text.startsWith("/leaderboard")) {
+        await handleLeaderboardCommand(chatId);
+      } else if (text.startsWith("/search")) {
+        await handleSearchCommand(chatId, text);
       } else if (text.startsWith("/")) {
         // Unknown command - show menu
         await showMainMenu(chatId);
@@ -147,6 +151,9 @@ async function handleCallbackQuery(chatId: string, data: string) {
     case "alerts_off":
       await toggleAlerts(chatId, false);
       break;
+    case "leaderboard":
+      await handleLeaderboardCommand(chatId);
+      break;
     default:
       await showMainMenu(chatId);
   }
@@ -160,11 +167,12 @@ async function showMainMenu(chatId: string) {
       { text: "💰 XAND Price", callback_data: "price" },
     ],
     [
-      { text: "📋 My Watched Nodes", callback_data: "status" },
-      { text: "❓ Help", callback_data: "help" },
+      { text: "🏆 Leaderboard", callback_data: "leaderboard" },
+      { text: "📋 My Nodes", callback_data: "status" },
     ],
     [
-      { text: "🌐 Open Dashboard", url: DASHBOARD_URL },
+      { text: "❓ Help", callback_data: "help" },
+      { text: "🌐 Dashboard", url: DASHBOARD_URL },
     ],
   ];
 
@@ -483,8 +491,10 @@ async function handleHelpCommand(chatId: string) {
 <b>📊 Network Info:</b>
 /network - Live network statistics
 /price - XAND token price & market data
+/top - 🏆 Leaderboard (top nodes)
 
-<b>🔔 Node Monitoring:</b>
+<b>🔍 Search & Monitor:</b>
+/search [pubkey] - Find a specific node
 /watch [pubkey] - Start watching a pNode
 /unwatch [pubkey] - Stop watching
 /status - View your watched nodes
@@ -492,10 +502,11 @@ async function handleHelpCommand(chatId: string) {
 <b>⚙️ Settings:</b>
 /alerts on|off - Toggle notifications
 
-<b>📝 Tips:</b>
+<b>💡 Tips:</b>
 • Watch up to 10 pNodes
 • Get instant offline alerts
-• All data is real-time
+• Use /search to find any node
+• Ask me anything about Xandeum!
   `.trim();
 
   const keyboard: InlineButton[][] = [
@@ -554,31 +565,49 @@ async function handleNetworkCommand(chatId: string) {
     return;
   }
   
-  const statusEmoji = stats.healthPercent >= 90 ? "🟢" : stats.healthPercent >= 70 ? "🟡" : "🔴";
+  // Network Weather based on health
+  let weatherEmoji = "☀️";
+  let weatherLabel = "Sunny";
+  if (stats.healthPercent >= 90) {
+    weatherEmoji = "☀️"; weatherLabel = "Sunny - Excellent!";
+  } else if (stats.healthPercent >= 75) {
+    weatherEmoji = "⛅"; weatherLabel = "Partly Cloudy";
+  } else if (stats.healthPercent >= 60) {
+    weatherEmoji = "☁️"; weatherLabel = "Cloudy";
+  } else if (stats.healthPercent >= 40) {
+    weatherEmoji = "🌧️"; weatherLabel = "Rainy";
+  } else {
+    weatherEmoji = "⛈️"; weatherLabel = "Stormy - Critical!";
+  }
+  
+  const onlineRate = stats.total > 0 ? ((stats.online / stats.total) * 100).toFixed(1) : 0;
   
   const message = `
 📊 <b>Xandeum Network Status</b>
 
-${statusEmoji} <b>Health:</b> ${stats.healthPercent}%
+${weatherEmoji} <b>Weather:</b> ${weatherLabel}
+🏥 <b>Health Score:</b> ${stats.healthPercent}%
 
-<b>pNode Statistics:</b>
-├ 🟢 Online: ${stats.online}
-├ 🔴 Offline: ${stats.offline}
-├ 🔄 Syncing: ${stats.syncing}
-└ 📦 Total: ${stats.total}
+<b>━━━ pNode Statistics ━━━</b>
+├ 🟢 Online: <b>${stats.online}</b> (${onlineRate}%)
+├ 🟡 Warning: <b>${stats.syncing}</b>
+├ 🔴 Offline: <b>${stats.offline}</b>
+└ 📦 Total: <b>${stats.total}</b>
 
-<b>Storage:</b> ${stats.storageGB.toLocaleString()} GB
+<b>━━━ Network Capacity ━━━</b>
+💾 Total Storage: <b>${stats.storageGB.toLocaleString()} GB</b>
 
-<i>Updated: ${new Date().toLocaleTimeString()}</i>
+<i>🕐 Updated: ${new Date().toLocaleTimeString()}</i>
   `.trim();
   
   const keyboard: InlineButton[][] = [
     [
       { text: "🔄 Refresh", callback_data: "network" },
-      { text: "💰 Check Price", callback_data: "price" },
+      { text: "🏆 Leaderboard", callback_data: "leaderboard" },
     ],
     [
-      { text: "🌐 Open Dashboard", url: DASHBOARD_URL },
+      { text: "💰 XAND Price", callback_data: "price" },
+      { text: "🌐 Dashboard", url: DASHBOARD_URL },
     ],
     [
       { text: "« Back to Menu", callback_data: "menu" },
@@ -607,13 +636,28 @@ async function handlePriceCommand(chatId: string) {
     const changeEmoji = change24h >= 0 ? "📈" : "📉";
     const changeFormatted = change24h >= 0 ? `+${change24h.toFixed(2)}%` : `${change24h.toFixed(2)}%`;
     
+    // Format market data
+    const formatLargeNum = (num: number) => {
+      if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+      if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+      if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
+      return `$${num.toFixed(2)}`;
+    };
+    
     const message = `
-💰 <b>XAND Token Price</b>
+💰 <b>XAND Token Analytics</b>
 
-<b>Price:</b> $${priceFormatted}
-${changeEmoji} <b>24h:</b> ${changeFormatted}
+<b>━━━ Price Data ━━━</b>
+💵 <b>Price:</b> $${priceFormatted}
+${changeEmoji} <b>24h Change:</b> ${changeFormatted}
 
-<i>Data from Jupiter/DexScreener</i>
+<b>━━━ Market Data ━━━</b>
+📊 Market Cap: <b>${formatLargeNum(priceData.market_cap || 0)}</b>
+📈 24h Volume: <b>${formatLargeNum(priceData.volume_24h || 0)}</b>
+💧 Liquidity: <b>${formatLargeNum(priceData.liquidity || 0)}</b>
+🏦 FDV: <b>${formatLargeNum(priceData.fdv || 0)}</b>
+
+<i>🕐 Data from Jupiter/DexScreener</i>
     `.trim();
     
     const keyboard: InlineButton[][] = [
@@ -637,6 +681,137 @@ ${changeEmoji} <b>24h:</b> ${changeFormatted}
       [{ text: "« Back to Menu", callback_data: "menu" }],
     ];
     await sendTelegramMessage(chatId, "❌ Unable to fetch price data. Please try again.", "HTML", keyboard);
+  }
+}
+
+// Handle leaderboard command - show top nodes
+async function handleLeaderboardCommand(chatId: string) {
+  await sendTelegramMessage(chatId, "⏳ Fetching top performers...");
+  
+  try {
+    const response = await fetch(`${DASHBOARD_URL}/api/pnodes`, {
+      cache: "no-store",
+    });
+    const data = await response.json();
+    
+    if (!data.success || !data.data?.nodes) {
+      await sendTelegramMessage(chatId, "❌ Unable to fetch leaderboard. Please try again later.");
+      return;
+    }
+    
+    const nodes = data.data.nodes;
+    
+    // Sort by X-Score
+    const topByScore = [...nodes]
+      .filter((n: { xScore: number }) => n.xScore > 0)
+      .sort((a: { xScore: number }, b: { xScore: number }) => b.xScore - a.xScore)
+      .slice(0, 5);
+    
+    // Sort by Credits
+    const topByCredits = [...nodes]
+      .filter((n: { credits: number }) => n.credits > 0)
+      .sort((a: { credits: number }, b: { credits: number }) => b.credits - a.credits)
+      .slice(0, 5);
+    
+    const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
+    
+    let message = "🏆 <b>pNode Leaderboard</b>\n\n";
+    
+    message += "<b>📊 Top by X-Score:</b>\n";
+    topByScore.forEach((node: { pubkey: string; xScore: number }, i: number) => {
+      const shortPubkey = node.pubkey.slice(0, 8) + "..." + node.pubkey.slice(-4);
+      message += `${medals[i]} ${shortPubkey} - <b>${node.xScore}</b>\n`;
+    });
+    
+    message += "\n<b>💎 Top by Credits:</b>\n";
+    topByCredits.forEach((node: { pubkey: string; credits: number }, i: number) => {
+      const shortPubkey = node.pubkey.slice(0, 8) + "..." + node.pubkey.slice(-4);
+      message += `${medals[i]} ${shortPubkey} - <b>${node.credits.toLocaleString()}</b>\n`;
+    });
+    
+    message += `\n<i>Updated: ${new Date().toLocaleTimeString()}</i>`;
+    
+    const keyboard: InlineButton[][] = [
+      [
+        { text: "🔄 Refresh", callback_data: "leaderboard" },
+        { text: "📊 Network", callback_data: "network" },
+      ],
+      [
+        { text: "🌐 Full Leaderboard", url: `${DASHBOARD_URL}/pnodes` },
+      ],
+      [
+        { text: "« Back to Menu", callback_data: "menu" },
+      ],
+    ];
+    
+    await sendTelegramMessage(chatId, message, "HTML", keyboard);
+  } catch {
+    await sendTelegramMessage(chatId, "❌ Unable to fetch leaderboard. Please try again later.");
+  }
+}
+
+// Handle search command - search for a node by pubkey
+async function handleSearchCommand(chatId: string, text: string) {
+  const parts = text.split(" ");
+  const query = parts.slice(1).join(" ").trim();
+  
+  if (!query || query.length < 6) {
+    await sendTelegramMessage(
+      chatId, 
+      "🔍 <b>Search for a pNode</b>\n\nUsage: <code>/search [pubkey or partial]</code>\n\nExample: <code>/search 7xK...</code>",
+      "HTML"
+    );
+    return;
+  }
+  
+  await sendTelegramMessage(chatId, "🔍 Searching...");
+  
+  try {
+    const response = await fetch(`${DASHBOARD_URL}/api/pnodes`, {
+      cache: "no-store",
+    });
+    const data = await response.json();
+    
+    if (!data.success || !data.data?.nodes) {
+      await sendTelegramMessage(chatId, "❌ Unable to search. Please try again later.");
+      return;
+    }
+    
+    const nodes = data.data.nodes;
+    const searchLower = query.toLowerCase();
+    
+    const matches = nodes.filter((n: { pubkey: string }) => 
+      n.pubkey.toLowerCase().includes(searchLower)
+    ).slice(0, 3);
+    
+    if (matches.length === 0) {
+      await sendTelegramMessage(
+        chatId, 
+        `🔍 No nodes found matching "<code>${query}</code>"\n\nTry a different search term or check the full list on the dashboard.`,
+        "HTML",
+        [[{ text: "🌐 Browse All Nodes", url: `${DASHBOARD_URL}/pnodes` }]]
+      );
+      return;
+    }
+    
+    let message = `🔍 <b>Found ${matches.length} node(s):</b>\n\n`;
+    
+    matches.forEach((node: { pubkey: string; status: string; xScore: number; credits: number }, i: number) => {
+      const statusEmoji = node.status === "online" ? "🟢" : node.status === "warning" ? "🟡" : "🔴";
+      const shortPubkey = node.pubkey.slice(0, 12) + "..." + node.pubkey.slice(-8);
+      
+      message += `${i + 1}. ${statusEmoji} <code>${shortPubkey}</code>\n`;
+      message += `   X-Score: ${node.xScore} | Credits: ${node.credits.toLocaleString()}\n\n`;
+    });
+    
+    const keyboard: InlineButton[][] = matches.map((node: { pubkey: string }) => [
+      { text: `📋 View ${node.pubkey.slice(0, 8)}...`, url: `${DASHBOARD_URL}/pnodes/${node.pubkey}` }
+    ]);
+    keyboard.push([{ text: "« Back to Menu", callback_data: "menu" }]);
+    
+    await sendTelegramMessage(chatId, message, "HTML", keyboard);
+  } catch {
+    await sendTelegramMessage(chatId, "❌ Search failed. Please try again later.");
   }
 }
 

@@ -9,7 +9,7 @@ import {
   ArrowRight,
   ExternalLink,
   Github,
-  Mail,
+  Twitter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,20 +103,25 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-wrap gap-3 pt-4">
             <a
-              href="https://github.com/atech-web-solutions"
+              href="https://x.com/atechwebsol"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="gap-2">
+                <Twitter className="h-4 w-4" />
+                Follow on X
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </a>
+            <a
+              href="https://github.com/atechwebsol01/xandeum-analytics"
               target="_blank"
               rel="noopener noreferrer"
             >
               <Button variant="outline" className="gap-2">
                 <Github className="h-4 w-4" />
-                GitHub
+                GitHub Repo
                 <ExternalLink className="h-3 w-3" />
-              </Button>
-            </a>
-            <a href="mailto:contact@atechwebsolutions.com">
-              <Button variant="outline" className="gap-2">
-                <Mail className="h-4 w-4" />
-                Contact Us
               </Button>
             </a>
           </div>

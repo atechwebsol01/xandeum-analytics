@@ -9,48 +9,98 @@ A comprehensive real-time analytics dashboard for monitoring the Xandeum pNode n
 
 ## Live Demo
 
-**[https://xandeum-analytics.vercel.app](https://xandeum-analytics.vercel.app)**
+**[https://xandeum-analytics-theta.vercel.app](https://xandeum-analytics-theta.vercel.app)**
 
-## Key Features
+## Features Overview
+
+### Dashboard & Navigation
+- **Modern Sidebar Navigation** - Collapsible sidebar with organized sections
+- **Network Weather** - Visual health indicator (☀️ Sunny to ⛈️ Stormy)
+- **Dark/Light Theme** - Toggle between themes
+- **Mobile Responsive** - Works on all devices
 
 ### Real-Time Network Monitoring
-- **Live pNode Data** - Connects directly to Xandeum pRPC endpoints (port 6000)
-- **Pod Credits Integration** - Official reputation system from `podcredits.xandeum.network`
-- **Auto-Refresh** - Data updates every 30 seconds automatically
-- **200+ pNodes Tracked** - Complete network visibility
+- **Live pNode Data** - Direct connection to Xandeum pRPC endpoints
+- **Pod Credits Integration** - Official reputation from `podcredits.xandeum.network`
+- **Auto-Refresh** - Data updates every 30 seconds
+- **All pNodes Tracked** - Complete network visibility
 
-### Interactive Global Map
-- **Geographic Distribution** - Real-time map showing node locations worldwide
-- **IP Geolocation** - Automatic location detection for all nodes
-- **Status Indicators** - Color-coded markers (green=online, yellow=warning, red=offline)
-- **Country Statistics** - Top 10 countries by node count
-- **Click for Details** - Popup with node info on each marker
+### Pages & Features
 
-### Dashboard Analytics
-- **Network Statistics** - Total nodes, online/offline rates, storage metrics
-- **Pod Credits Leaderboard** - Top performers ranked by official credits
-- **Version Distribution** - Visual breakdown of pNode software versions
-- **Status Monitoring** - Real-time online/warning/offline status tracking
-- **Network Health Score** - Overall network status at a glance
+#### 🏠 Overview (Home)
+- Hero stats (Total Nodes, Online, Avg X-Score, XAND Price)
+- Network Weather indicator
+- Interactive 3D Globe showing node distribution
+- Quick access cards to all features
 
-### Node Comparison Tool (Unique Feature)
-- **Side-by-Side Comparison** - Compare any two nodes across all metrics
-- **Winner Highlighting** - Visual indicators showing which node performs better
-- **Quick Compare** - One-click comparison of top performers
-- **7 Key Metrics** - Credits, X-Score, Uptime, Storage, Version, Public Access
+#### 📊 All Nodes (`/pnodes`)
+- **Visual Summary** - X-Score distribution bars, Node Status breakdown
+- **Clickable Rows** - Click any node for detailed view
+- **Advanced Filtering** - By status, version, search by pubkey
+- **Sortable Columns** - Sort by X-Score, credits, uptime, storage
+- **Export** - CSV and JSON download options
 
-### Data Management
-- **CSV Export** - Download filtered node data as CSV
-- **JSON Export** - Full data export in JSON format
-- **Advanced Filtering** - Filter by status, version, search by pubkey/address
-- **Sortable Columns** - Sort by credits, uptime, storage, last seen
+#### 🌍 Global Map (`/map`)
+- **3D Globe** - Interactive globe with node markers
+- **2D Leaflet Map** - Detailed map view with clustering
+- **Country Rankings** - Top countries by node count
+- **IP Geolocation** - Automatic location detection
 
-### Individual Node Details
-- **Full Node Profile** - Detailed view with all metrics
-- **Pod Credits Display** - Official credits with reputation level
-- **X-Score Rating** - Composite performance score (0-100)
-- **Storage Analytics** - Committed vs used storage visualization
-- **Network Info** - IP address, RPC port, public/private status
+#### ⭐ My Nodes (`/my-nodes`) - NEW!
+- **Personal Dashboard** - Save up to 20 favorite nodes
+- **LocalStorage Persistence** - Data saved in browser
+- **Health Risk Indicators** - Alerts for at-risk nodes
+- **Quick Actions** - Remove, copy pubkey, view details
+
+#### 📈 Network Stats (`/network`)
+- **Network Health Score** - Overall health gauge
+- **Status Distribution** - Donut chart visualization
+- **Version Distribution** - Bar chart of software versions
+- **Storage Analytics** - Network-wide storage metrics
+
+#### 📜 Historical Data (`/history`)
+- **Supabase Integration** - Historical snapshots stored
+- **4 Tabs** - Status, Versions, Locations, Timeline
+- **Trend Analysis** - View network changes over time
+
+#### 💰 Token Analytics (`/token`)
+- **XAND Price** - Live price from Jupiter/DexScreener
+- **Embedded Chart** - DexScreener trading chart
+- **Market Data** - Market cap, volume, liquidity, FDV
+
+#### 💵 Earnings (`/earnings`) - NEW!
+- **Earnings Estimator** - Calculate potential pNode earnings
+- **ROI Calculator** - Profitability analysis
+- **Version Tracker** - Shows outdated nodes needing updates
+
+#### 🔄 Swap (`/swap`)
+- **Jupiter Integration** - Swap SOL ↔ XAND directly
+- **Embedded Widget** - Jupiter swap terminal
+
+#### 🤖 AI Assistant (`/chat`)
+- **XandBot** - AI-powered chat assistant
+- **OpenAI Integration** - GPT-4o-mini for responses
+- **Suggested Questions** - Quick prompts for common queries
+
+#### 📱 Telegram Bot (`/telegram`)
+- **@Xandeum_Atech_bot** - Telegram bot integration
+- **Commands:**
+  - `/network` - Network stats with weather indicator
+  - `/price` - XAND price with full market data
+  - `/top` - Leaderboard (top by X-Score & Credits)
+  - `/search [pubkey]` - Find specific nodes
+  - `/watch [pubkey]` - Monitor a node
+  - `/status` - View watched nodes
+  - `/alerts on/off` - Toggle notifications
+
+### Individual Node Details (`/pnodes/[pubkey]`)
+- **Identity Card** - Pubkey, address, version, status
+- **Pod Credits** - Official credits with reputation tier
+- **X-Score Breakdown** - Visual breakdown of score components
+- **Status Distribution** - Donut chart of historical status
+- **Storage Gauge** - Committed vs used visualization
+- **7-Day Analytics** - Uptime %, credits growth, avg X-Score
+- **Credits Explanation** - How credits and tiers work
 
 ## Technology Stack
 
@@ -59,35 +109,51 @@ A comprehensive real-time analytics dashboard for monitoring the Xandeum pNode n
 - **Styling**: Tailwind CSS 4
 - **UI Components**: shadcn/ui + Radix UI
 - **Data Fetching**: TanStack Query (React Query)
-- **Charts**: Recharts
+- **Database**: Supabase (PostgreSQL)
+- **AI**: OpenAI GPT-4o-mini
+- **Maps**: Leaflet + React Globe.gl
 - **Deployment**: Vercel
 
 ## Data Sources
 
 ### pRPC Endpoints (Port 6000)
-The platform connects to multiple public pNodes for redundancy:
-- `http://192.190.136.28:6000`
-- `http://173.212.207.32:6000`
-- `http://152.53.236.91:6000`
-- And more...
-
-**API Method**: `get-pods-with-stats`
+Multiple public pNodes for redundancy - see `src/lib/prpc-client.ts`
 
 ### Pod Credits API
-Official reputation data from:
-- `https://podcredits.xandeum.network/api/pods-credits`
+`https://podcredits.xandeum.network/api/pods-credits`
+
+### Price Data
+- Jupiter API for SOL price
+- DexScreener API for XAND price and market data
 
 ## Local Development
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - npm or pnpm
+
+### Environment Variables
+
+Copy `.env.example` to `.env.local`:
+
+```bash
+# Supabase (for historical data)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+
+# OpenAI (for AI chat)
+OPENAI_API_KEY=your_openai_key
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=your_bot_token
+NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=your_bot_username
+```
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/xandeum-analytics.git
+git clone https://github.com/atechwebsol01/xandeum-analytics.git
 cd xandeum-analytics
 
 # Install dependencies
@@ -97,7 +163,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000)
 
 ### Available Scripts
 
@@ -110,85 +176,14 @@ npm run typecheck  # Run TypeScript type checking
 npm run test       # Run tests with Vitest
 ```
 
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Import project in [Vercel](https://vercel.com)
-3. Deploy - no environment variables required!
-
-### Manual Deployment
-
-```bash
-# Build the application
-npm run build
-
-# Start production server
-npm run start
-```
-
-## API Reference
-
-### GET /api/pnodes
-
-Returns all pNodes with their credits and computed metrics.
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "nodes": [
-      {
-        "pubkey": "...",
-        "address": "IP:PORT",
-        "ip": "...",
-        "port": 9001,
-        "rpc_port": 6000,
-        "version": "0.8.0",
-        "is_public": true,
-        "status": "online",
-        "credits": 45000,
-        "xScore": 85,
-        "storage_committed": 340000000000,
-        "storage_used": 1590,
-        "storage_usage_percent": 0.0000004,
-        "uptime": 539724,
-        "last_seen_timestamp": 1766309562
-      }
-    ],
-    "stats": {
-      "totalNodes": 232,
-      "onlineNodes": 180,
-      "warningNodes": 30,
-      "offlineNodes": 22,
-      "publicNodes": 65,
-      "privateNodes": 167,
-      "totalStorageCommitted": 5000000000000,
-      "totalStorageUsed": 100000,
-      "averageUptime": 400000,
-      "averageXScore": 65,
-      "totalCredits": 10000000,
-      "averageCredits": 43000,
-      "versionDistribution": { "0.8.0": 200, "0.7.3": 32 }
-    },
-    "timestamp": 1766310000000,
-    "creditsCount": 215
-  }
-}
-```
-
 ## X-Score Calculation
-
-The X-Score (0-100) is a composite metric calculated from:
 
 | Factor | Max Points | Description |
 |--------|------------|-------------|
-| Pod Credits | 35 | Official reputation (0-10K: 20pts, 10K-50K: +15pts) |
+| Pod Credits | 35 | Official reputation (scaled by credit amount) |
 | Uptime | 25 | Days of continuous operation |
-| Availability | 25 | Based on last seen timestamp |
-| Storage | 10 | Storage commitment and usage |
+| Status | 25 | Online=25, Warning=15, Offline=0 |
+| Storage | 10 | Storage commitment level |
 | Public Access | 5 | Bonus for public pRPC exposure |
 
 ## Project Structure
@@ -196,25 +191,42 @@ The X-Score (0-100) is a composite metric calculated from:
 ```
 src/
 ├── app/                    # Next.js App Router pages
-│   ├── api/pnodes/        # API route for fetching data
-│   ├── pnodes/            # pNodes listing and detail pages
-│   ├── analytics/         # Analytics charts page
-│   └── page.tsx           # Main dashboard
+│   ├── api/               # API routes
+│   │   ├── pnodes/       # pNode data endpoint
+│   │   ├── telegram/     # Telegram bot webhook
+│   │   ├── chat/         # AI chat endpoint
+│   │   └── token-price/  # Price data endpoint
+│   ├── pnodes/           # All nodes & detail pages
+│   ├── network/          # Network stats page
+│   ├── map/              # Global map page
+│   ├── history/          # Historical data page
+│   ├── token/            # Token analytics page
+│   ├── earnings/         # Earnings calculator page
+│   ├── my-nodes/         # Personal node tracker
+│   ├── chat/             # AI assistant page
+│   ├── telegram/         # Telegram bot info page
+│   └── page.tsx          # Home dashboard
 ├── components/
-│   ├── dashboard/         # Dashboard-specific components
-│   ├── ui/               # shadcn/ui components
-│   └── providers/        # React Query provider
-├── hooks/                 # Custom React hooks
-├── lib/                   # Utilities and API clients
-│   ├── prpc-client.ts    # pRPC API client
-│   ├── export.ts         # CSV/JSON export utilities
-│   └── utils.ts          # Helper functions
-└── types/                 # TypeScript type definitions
+│   ├── dashboard/        # Dashboard components
+│   ├── sidebar.tsx       # Main navigation
+│   └── ui/               # shadcn/ui components
+├── hooks/                # Custom React hooks
+├── lib/                  # Utilities and API clients
+└── types/                # TypeScript definitions
 ```
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import in [Vercel](https://vercel.com)
+3. Add environment variables
+4. Deploy!
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions welcome! Please submit a Pull Request.
 
 ## License
 
@@ -222,10 +234,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgements
 
-- [Xandeum](https://xandeum.network) - The scalable storage layer for Solana
-- [Superteam](https://superteam.fun) - For organizing this bounty
-- [shadcn/ui](https://ui.shadcn.com) - Beautiful UI components
-- [Vercel](https://vercel.com) - Hosting platform
+- [Xandeum](https://xandeum.network) - Scalable storage layer for Solana
+- [Superteam](https://superteam.fun) - Bounty organizers
+- [shadcn/ui](https://ui.shadcn.com) - UI components
+- [Vercel](https://vercel.com) - Hosting
 
 ---
 

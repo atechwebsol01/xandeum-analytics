@@ -46,4 +46,13 @@ next-env.d.ts
 
 # Temp files
 error.txt
-*.png
+
+# Personal research files (not for repo)
+Analytics_Platform_Details.md
+Xandeum_FAQ.md
+Xandeum_Official_Links.md
+competitors.txt
+devnet_dev_support_channel.txt
+xandeum_devs.txt
+*.pdf
+image*.png

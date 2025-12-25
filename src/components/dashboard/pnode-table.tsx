@@ -278,6 +278,15 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
               <tr className="border-b">
                 <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
                   <button
+                    onClick={() => handleSort("xScore")}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    X-Score
+                    {renderSortIcon("xScore")}
+                  </button>
+                </th>
+                <th scope="col" className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  <button
                     onClick={() => handleSort("credits")}
                     className="flex items-center gap-1 hover:text-foreground transition-colors"
                   >
@@ -352,8 +361,41 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
                 filteredAndSortedNodes.map((node) => (
                   <tr
                     key={node.pubkey}
-                    className="border-b hover:bg-muted/50 transition-colors"
+                    className="border-b hover:bg-violet-500/10 transition-colors cursor-pointer group"
+                    onClick={() => window.location.href = `/pnodes/${node.pubkey}`}
                   >
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={cn(
+                            "w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm",
+                            node.xScore >= 80
+                              ? "bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/30"
+                              : node.xScore >= 60
+                              ? "bg-blue-500/20 text-blue-500 ring-1 ring-blue-500/30"
+                              : node.xScore >= 40
+                              ? "bg-yellow-500/20 text-yellow-500 ring-1 ring-yellow-500/30"
+                              : node.xScore >= 20
+                              ? "bg-orange-500/20 text-orange-500 ring-1 ring-orange-500/30"
+                              : "bg-red-500/20 text-red-500 ring-1 ring-red-500/30"
+                          )}
+                        >
+                          {node.xScore}
+                        </div>
+                        <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all",
+                              node.xScore >= 80 ? "bg-emerald-500" :
+                              node.xScore >= 60 ? "bg-blue-500" :
+                              node.xScore >= 40 ? "bg-yellow-500" :
+                              node.xScore >= 20 ? "bg-orange-500" : "bg-red-500"
+                            )}
+                            style={{ width: `${node.xScore}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
                     <td className="py-4 px-4">
                       <div
                         className={cn(
@@ -442,10 +484,13 @@ export function PNodeTable({ nodes, isLoading }: PNodeTableProps) {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-end gap-1">
+                        <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+                          Click for details
+                        </span>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Link href={`/pnodes/${node.pubkey}`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Link href={`/pnodes/${node.pubkey}`} onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 group-hover:bg-violet-500/20">
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
                             </Link>

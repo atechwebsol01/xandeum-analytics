@@ -409,7 +409,7 @@ const sections: DocSection[] = [
         <p>Deploy your own instance:</p>
         <div className="p-4 rounded-lg bg-muted/50 font-mono text-sm space-y-2">
           <p className="text-muted-foreground"># Clone repository</p>
-          <p>git clone https://github.com/YOUR_USERNAME/xandeum-analytics.git</p>
+          <p>git clone https://github.com/atechwebsol01/xandeum-analytics.git</p>
           <p className="text-muted-foreground mt-2"># Install dependencies</p>
           <p>npm install</p>
           <p className="text-muted-foreground mt-2"># Start development server</p>

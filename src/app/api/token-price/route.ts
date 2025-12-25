@@ -113,22 +113,21 @@ export async function GET() {
       });
     }
 
-    // Return mock data if both APIs fail (for development/demo)
-    const mockData = {
-      price: 0.000042,
-      price_change_24h: 5.23,
-      market_cap: 4200000,
-      volume_24h: 125000,
-      liquidity: 85000,
-      fdv: 42000000,
-    };
+    // If we have cached data, return it
+    if (cachedData) {
+      return NextResponse.json({
+        success: true,
+        data: cachedData,
+        cached: true,
+        note: "Using cached data - live APIs temporarily unavailable",
+      });
+    }
 
+    // No data available - return error (NO fake/mock data)
     return NextResponse.json({
-      success: true,
-      data: cachedData || mockData,
-      cached: true,
-      note: "Using cached/fallback data",
-    });
+      success: false,
+      error: "Unable to fetch XAND token price. Please try again later.",
+    }, { status: 503 });
   } catch {
     return NextResponse.json(
       {

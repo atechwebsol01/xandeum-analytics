@@ -318,17 +318,6 @@ export default function AnalyticsPage() {
         <StakingCalculator />
       </div>
 
-      {/* AI Chat Section */}
-      <div id="chat" className="scroll-mt-20">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600">
-            <Bot className="h-5 w-5 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold">AI Assistant</h2>
-        </div>
-        <AIChat />
-      </div>
-
       {/* Charts */}
       <Tabs defaultValue="performance" className="space-y-6">
         <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">

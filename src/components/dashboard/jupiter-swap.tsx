@@ -201,15 +201,28 @@ export function JupiterSwap() {
           
 
 
-          {/* Jupiter Iframe */}
+          {/* Jupiter Iframe with Loading State */}
           {useIframe && (
-            <div className="w-full">
+            <div className="w-full relative">
+              {/* Loading skeleton shown initially */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 transition-opacity duration-500" id="swap-loading">
+                <Loader2 className="h-8 w-8 animate-spin text-violet-500 mb-3" />
+                <p className="text-sm text-muted-foreground">Loading Jupiter Swap...</p>
+                <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+              </div>
               <iframe
                 src={`https://jup.ag/swap/SOL-XAND?inputMint=So11111111111111111111111111111111111111112&outputMint=${XAND_MINT}`}
                 className="w-full border-0 rounded-lg"
                 style={{ height: "700px" }}
                 title="Jupiter Swap"
                 allow="clipboard-write; clipboard-read"
+                onLoad={() => {
+                  const loadingEl = document.getElementById('swap-loading');
+                  if (loadingEl) loadingEl.style.opacity = '0';
+                  setTimeout(() => {
+                    if (loadingEl) loadingEl.style.display = 'none';
+                  }, 500);
+                }}
               />
             </div>
           )}

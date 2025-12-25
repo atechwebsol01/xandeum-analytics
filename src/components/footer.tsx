@@ -138,29 +138,20 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-8 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <span>&copy; {currentYear}</span>
+            <span>Built with</span>
+            <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+            <span>by</span>
             <a
-              href="https://github.com/atechwebsol01"
+              href="https://x.com/atechwebsol"
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-foreground hover:text-violet-600 transition-colors"
             >
               ATECH WEB SOLUTIONS
             </a>
-            <span>- Built with</span>
-            <Heart className="h-4 w-4 text-red-500 fill-red-500" />
-            <span>for the Xandeum community</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            Powered by{" "}
-            <a
-              href="https://github.com/atechwebsol01"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium hover:text-violet-600 transition-colors"
-            >
-              ATECH WEB SOLUTIONS
-            </a>
+            &copy; {currentYear} - For the Xandeum community
           </div>
         </div>
       </div>
