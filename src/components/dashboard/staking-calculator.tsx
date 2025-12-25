@@ -46,24 +46,41 @@ export function StakingCalculator() {
   const [selectedPeriod, setSelectedPeriod] = useState(90);
   const [solPrice, setSolPrice] = useState(180);
 
-  // Fetch real SOL price from our API
+  // Fetch real SOL price
   useEffect(() => {
     const fetchSolPrice = async () => {
+      // Try our API first
       try {
         const response = await fetch("/api/sol-price");
         if (response.ok) {
           const data = await response.json();
           if (data.price && data.price > 0) {
             setSolPrice(data.price);
+            return;
           }
         }
       } catch {
-        // Use default price on error
+        // API failed, try CoinGecko directly
+      }
+      
+      // Fallback: fetch directly from CoinGecko
+      try {
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd"
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.solana?.usd) {
+            setSolPrice(data.solana.usd);
+          }
+        }
+      } catch {
+        // Keep default price
       }
     };
     fetchSolPrice();
-    // Refresh price every minute
-    const interval = setInterval(fetchSolPrice, 60000);
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchSolPrice, 30000);
     return () => clearInterval(interval);
   }, []);
 
