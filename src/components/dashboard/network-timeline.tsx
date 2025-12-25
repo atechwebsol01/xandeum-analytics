@@ -1,96 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Clock, 
-  Activity,
-  AlertCircle
+  Server,
+  Wifi,
+  WifiOff,
+  AlertTriangle
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import type { NetworkSnapshot } from "@/types/database";
-
-interface TimelinePoint {
-  time: string;
-  timestamp: Date;
-  totalNodes: number;
-  onlineNodes: number;
-  offlineNodes: number;
-  healthPercent: number;
-}
+import { usePNodes } from "@/hooks/use-pnodes";
+import { cn } from "@/lib/utils";
 
 export function NetworkTimeline() {
-  const [timelineData, setTimelineData] = useState<TimelinePoint[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTimeline = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Fetch last 24 hours of snapshots
-        const twentyFourHoursAgo = new Date();
-        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-        
-        const { data, error: fetchError } = await supabase
-          .from("network_snapshots")
-          .select("*")
-          .gte("created_at", twentyFourHoursAgo.toISOString())
-          .order("created_at", { ascending: true });
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        if (data && data.length > 0) {
-          // Group by hour and take latest snapshot per hour
-          const hourlyData = new Map<string, NetworkSnapshot>();
-          
-          (data as NetworkSnapshot[]).forEach((snapshot) => {
-            const date = new Date(snapshot.created_at);
-            const hourKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
-            hourlyData.set(hourKey, snapshot);
-          });
-
-          const points: TimelinePoint[] = Array.from(hourlyData.values()).map((snapshot) => {
-            const date = new Date(snapshot.created_at);
-            return {
-              time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-              timestamp: date,
-              totalNodes: snapshot.total_nodes,
-              onlineNodes: snapshot.online_nodes,
-              offlineNodes: snapshot.offline_nodes,
-              healthPercent: snapshot.total_nodes > 0 
-                ? (snapshot.online_nodes / snapshot.total_nodes) * 100 
-                : 0,
-            };
-          });
-
-          setTimelineData(points.slice(-12)); // Last 12 data points
-        } else {
-          // No historical data available yet
-          setTimelineData([]);
-        }
-      } catch {
-        // Timeline fetch failed silently
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTimeline();
-    
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchTimeline, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const maxNodes = Math.max(...timelineData.map((d) => d.totalNodes), 1);
-  const avgHealth = timelineData.length > 0
-    ? timelineData.reduce((sum, d) => sum + d.healthPercent, 0) / timelineData.length
-    : 0;
+  const { data, isLoading } = usePNodes();
+  
+  const responseData = data?.success ? data.data : null;
+  const stats = responseData?.stats;
+  const nodes = responseData?.nodes || [];
+  
+  const totalNodes = stats?.totalNodes || 0;
+  const onlineNodes = stats?.onlineNodes || 0;
+  const warningNodes = stats?.warningNodes || 0;
+  const offlineNodes = stats?.offlineNodes || 0;
+  
+  const onlinePct = totalNodes > 0 ? (onlineNodes / totalNodes) * 100 : 0;
+  const warningPct = totalNodes > 0 ? (warningNodes / totalNodes) * 100 : 0;
+  const offlinePct = totalNodes > 0 ? (offlineNodes / totalNodes) * 100 : 0;
+  
+  const healthScore = onlinePct + (warningPct * 0.5);
 
   if (isLoading) {
     return (
@@ -98,17 +36,17 @@ export function NetworkTimeline() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Network Timeline
+            Network Status
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-40 w-full" />
+          <div className="h-48 flex items-center justify-center">
+            <div className="animate-pulse text-muted-foreground">Loading...</div>
+          </div>
         </CardContent>
       </Card>
     );
   }
-
-  const hasData = timelineData.some(d => d.totalNodes > 0);
 
   return (
     <Card>
@@ -118,86 +56,148 @@ export function NetworkTimeline() {
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600">
               <Clock className="h-4 w-4 text-white" />
             </div>
-            24h Network Timeline
+            Network Status
           </CardTitle>
           <Badge 
-            variant={avgHealth >= 80 ? "success" : avgHealth >= 50 ? "warning" : "error"}
+            variant={healthScore >= 80 ? "success" : healthScore >= 50 ? "warning" : "error"}
           >
-            {avgHealth.toFixed(1)}% avg health
+            {healthScore.toFixed(1)}% health
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        {!hasData ? (
-          <div className="h-40 flex flex-col items-center justify-center text-muted-foreground">
-            <AlertCircle className="h-8 w-8 mb-2 opacity-50" />
-            <p className="text-sm">No historical data yet</p>
-            <p className="text-xs">Data collection will start automatically</p>
+        <div className="flex items-center gap-6">
+          {/* Donut Chart */}
+          <div className="relative w-32 h-32 flex-shrink-0">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+              {/* Background circle */}
+              <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted/20" />
+              {/* Online segment (green) */}
+              <circle
+                cx="50" cy="50" r="40" fill="none"
+                stroke="#10b981" strokeWidth="12"
+                strokeDasharray={`${onlinePct * 2.51} 251`}
+                strokeLinecap="round"
+              />
+              {/* Warning segment (yellow) */}
+              <circle
+                cx="50" cy="50" r="40" fill="none"
+                stroke="#eab308" strokeWidth="12"
+                strokeDasharray={`${warningPct * 2.51} 251`}
+                strokeDashoffset={`${-onlinePct * 2.51}`}
+                strokeLinecap="round"
+              />
+              {/* Offline segment (red) */}
+              <circle
+                cx="50" cy="50" r="40" fill="none"
+                stroke="#ef4444" strokeWidth="12"
+                strokeDasharray={`${offlinePct * 2.51} 251`}
+                strokeDashoffset={`${-(onlinePct + warningPct) * 2.51}`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <Server className="h-5 w-5 text-muted-foreground mb-1" />
+              <span className="text-xl font-bold">{totalNodes}</span>
+              <span className="text-[10px] text-muted-foreground">nodes</span>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Mini chart */}
-            <div className="h-32 flex items-end gap-1 mb-2">
-              {timelineData.map((point, index) => (
-                <div
-                  key={index}
-                  className="flex-1 flex flex-col items-center gap-0.5 group"
-                >
-                  <div className="w-full relative">
-                    {/* Online nodes bar */}
-                    <div
-                      className="w-full rounded-t bg-emerald-500 transition-all group-hover:bg-emerald-400"
-                      style={{
-                        height: `${(point.onlineNodes / maxNodes) * 100}px`,
-                        minHeight: point.onlineNodes > 0 ? "4px" : "0",
-                      }}
-                    />
-                    {/* Offline nodes bar */}
-                    <div
-                      className="w-full rounded-b bg-red-500/50 transition-all"
-                      style={{
-                        height: `${(point.offlineNodes / maxNodes) * 20}px`,
-                        minHeight: point.offlineNodes > 0 ? "2px" : "0",
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Tooltip on hover */}
-                  <div className="absolute bottom-full mb-2 px-2 py-1 bg-background border rounded shadow-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                    <p className="font-medium">{point.time}</p>
-                    <p className="text-emerald-500">{point.onlineNodes} online</p>
-                    <p className="text-red-500">{point.offlineNodes} offline</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Time labels */}
-            <div className="flex justify-between text-[10px] text-muted-foreground border-t pt-2">
-              {timelineData.filter((_, i) => i % 3 === 0).map((point, index) => (
-                <span key={index}>{point.time}</span>
-              ))}
-            </div>
-
-            {/* Stats row */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded bg-emerald-500" />
-                  <span className="text-xs text-muted-foreground">Online</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded bg-red-500/50" />
-                  <span className="text-xs text-muted-foreground">Offline</span>
-                </div>
+          
+          {/* Status Breakdown */}
+          <div className="flex-1 space-y-3">
+            {/* Online */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <Wifi className="h-4 w-4 text-emerald-500" />
               </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Activity className="h-3 w-3" />
-                {timelineData[timelineData.length - 1]?.totalNodes || 0} total nodes
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium">Online</span>
+                  <span className="text-sm font-bold text-emerald-500">{onlineNodes}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
+                    style={{ width: `${onlinePct}%` }} 
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground">{onlinePct.toFixed(1)}%</span>
               </div>
             </div>
-          </>
-        )}
+            
+            {/* Warning */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-yellow-500/10">
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium">Warning</span>
+                  <span className="text-sm font-bold text-yellow-500">{warningNodes}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-yellow-500 rounded-full transition-all duration-500" 
+                    style={{ width: `${warningPct}%` }} 
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground">{warningPct.toFixed(1)}%</span>
+              </div>
+            </div>
+            
+            {/* Offline */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-red-500/10">
+                <WifiOff className="h-4 w-4 text-red-500" />
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium">Offline</span>
+                  <span className="text-sm font-bold text-red-500">{offlineNodes}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-red-500 rounded-full transition-all duration-500" 
+                    style={{ width: `${offlinePct}%` }} 
+                  />
+                </div>
+                <span className="text-[10px] text-muted-foreground">{offlinePct.toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Health Indicator Bar */}
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-muted-foreground">Network Health Score</span>
+            <span className={cn(
+              "text-lg font-bold",
+              healthScore >= 80 ? "text-emerald-500" :
+              healthScore >= 50 ? "text-yellow-500" : "text-red-500"
+            )}>
+              {healthScore.toFixed(0)}/100
+            </span>
+          </div>
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={cn(
+                "h-full rounded-full transition-all duration-500",
+                healthScore >= 80 ? "bg-gradient-to-r from-emerald-600 to-emerald-400" :
+                healthScore >= 50 ? "bg-gradient-to-r from-yellow-600 to-yellow-400" :
+                "bg-gradient-to-r from-red-600 to-red-400"
+              )}
+              style={{ width: `${healthScore}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+            <span>Critical</span>
+            <span>Poor</span>
+            <span>Fair</span>
+            <span>Good</span>
+            <span>Excellent</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
