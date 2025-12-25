@@ -44,8 +44,8 @@ export async function fetchBatchGeoLocations(
           }
         }
       }
-    } catch (error) {
-      console.warn("Failed to fetch geolocation data:", error);
+    } catch {
+      // Batch request failed silently
     }
   }
 

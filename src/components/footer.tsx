@@ -69,12 +69,28 @@ export function Footer() {
                 Discord <ExternalLink className="h-3 w-3" />
               </a>
               <a
-                href="https://twitter.com/xaboratory"
+                href="https://t.me/xandeumlabs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              >
+                Telegram <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://twitter.com/xandeumnetwork"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
               >
                 Twitter <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://forum.xandeum.network"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              >
+                Forum <ExternalLink className="h-3 w-3" />
               </a>
             </nav>
           </div>

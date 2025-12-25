@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftRight, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, ExternalLink, Loader2 } from "lucide-react";
 
 declare global {
   interface Window {
@@ -36,10 +36,13 @@ interface JupiterConfig {
   };
 }
 
+// XAND Token mint address (official)
+const XAND_MINT = "XANDuUoVoUqniKkpcKhrxmvYJybpJvUxJLr21Gaj3Hx";
+
 export function JupiterSwap() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [useIframe] = useState(true); // Default to iframe - more reliable
   const containerRef = useRef<HTMLDivElement>(null);
   const initAttemptedRef = useRef(false);
   const scriptLoadedRef = useRef(false);
@@ -47,6 +50,7 @@ export function JupiterSwap() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!containerRef.current) return;
+    if (useIframe) return; // Don't load terminal when using iframe
 
     let isMounted = true;
     let checkJupiterInterval: NodeJS.Timeout | null = null;
@@ -73,10 +77,8 @@ export function JupiterSwap() {
         });
         setIsReady(true);
         setIsLoading(false);
-      } catch (err) {
-        console.error("Jupiter init error:", err);
+      } catch {
         initAttemptedRef.current = false;
-        setError("Failed to initialize swap");
         setIsLoading(false);
       }
     };
@@ -119,14 +121,12 @@ export function JupiterSwap() {
             loadTimeout = setTimeout(() => {
               if (checkJupiterInterval) clearInterval(checkJupiterInterval);
               if (!window.Jupiter && isMounted) {
-                setError("Failed to load Jupiter");
                 setIsLoading(false);
               }
             }, 20000);
           };
           script.onerror = () => {
             if (isMounted) {
-              setError("Failed to load Jupiter");
               setIsLoading(false);
             }
           };
@@ -142,15 +142,12 @@ export function JupiterSwap() {
           loadTimeout = setTimeout(() => {
             if (checkJupiterInterval) clearInterval(checkJupiterInterval);
             if (!isReady && isMounted) {
-              setError("Jupiter failed to initialize");
               setIsLoading(false);
             }
           }, 20000);
         }
-      } catch (err) {
-        console.error("Jupiter load error:", err);
+      } catch {
         if (isMounted) {
-          setError("Failed to load Jupiter");
           setIsLoading(false);
         }
       }
@@ -166,34 +163,7 @@ export function JupiterSwap() {
       if (checkJupiterInterval) clearInterval(checkJupiterInterval);
       if (loadTimeout) clearTimeout(loadTimeout);
     };
-  }, [isReady]);
-
-  const handleRetry = () => {
-    setError(null);
-    setIsLoading(true);
-    initAttemptedRef.current = false;
-    if (window.Jupiter && document.getElementById("jupiter-terminal")) {
-      try {
-        window.Jupiter.init({
-          displayMode: "integrated",
-          integratedTargetId: "jupiter-terminal",
-          endpoint: process.env.NEXT_PUBLIC_HELIUS_RPC_URL || "https://mainnet.helius-rpc.com/?api-key=908f61ba-2bc3-4475-a583-e5cac9d8dae8",
-          strictTokenList: false,
-          defaultExplorer: "solscan",
-          formProps: {
-            initialInputMint: "So11111111111111111111111111111111111111112",
-            initialOutputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-            swapMode: "ExactIn",
-          },
-        });
-        setIsReady(true);
-        setIsLoading(false);
-      } catch {
-        setError("Failed to initialize swap");
-        setIsLoading(false);
-      }
-    }
-  };
+  }, [isReady, useIframe]);
 
   return (
     <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-background via-background to-muted/30">
@@ -209,23 +179,15 @@ export function JupiterSwap() {
               <p className="text-xs text-muted-foreground">Best rates on Solana</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {error && (
-              <Button variant="ghost" size="sm" onClick={handleRetry} className="gap-1">
-                <RefreshCw className="h-3 w-3" />
-                Retry
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground text-xs"
-              onClick={() => window.open("https://jup.ag", "_blank")}
-            >
-              Powered by Jupiter
-              <ExternalLink className="ml-1 h-3 w-3" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground text-xs"
+            onClick={() => window.open(`https://jup.ag/swap/SOL-${XAND_MINT}`, "_blank")}
+          >
+            Open in Jupiter
+            <ExternalLink className="ml-1 h-3 w-3" />
+          </Button>
         </div>
 
         {/* Content */}
@@ -237,40 +199,29 @@ export function JupiterSwap() {
             </div>
           )}
           
-          {error && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background z-10 p-6">
-              <div className="text-center space-y-4 max-w-sm">
-                <div className="p-4 rounded-full bg-red-500/10 w-fit mx-auto">
-                  <ArrowLeftRight className="h-8 w-8 text-red-500" />
-                </div>
-                <div>
-                  <p className="font-medium text-destructive mb-1">Connection Issue</p>
-                  <p className="text-sm text-muted-foreground">{error}</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <Button variant="outline" onClick={handleRetry} className="gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Try Again
-                  </Button>
-                  <Button 
-                    variant="default"
-                    onClick={() => window.open("https://jup.ag", "_blank")}
-                    className="gap-2"
-                  >
-                    Open Jupiter.ag
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+
+
+          {/* Jupiter Iframe */}
+          {useIframe && (
+            <div className="w-full">
+              <iframe
+                src={`https://jup.ag/swap/SOL-XAND?inputMint=So11111111111111111111111111111111111111112&outputMint=${XAND_MINT}`}
+                className="w-full border-0 rounded-lg"
+                style={{ height: "700px" }}
+                title="Jupiter Swap"
+                allow="clipboard-write; clipboard-read"
+              />
             </div>
           )}
 
           {/* Jupiter Terminal Container */}
-          <div 
-            id="jupiter-terminal" 
-            className="w-full"
-            style={{ minHeight: "500px" }}
-          />
+          {!useIframe && (
+            <div 
+              id="jupiter-terminal" 
+              className="w-full"
+              style={{ minHeight: "500px" }}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

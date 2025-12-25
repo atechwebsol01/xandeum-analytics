@@ -2,7 +2,6 @@ import type { PNode, PRPCResponse, GetPodsResponse } from "@/types/pnode";
 
 // pRPC endpoints - use proxy in production to avoid CORS/mixed content
 // The proxy is configured in next.config.ts rewrites
-const IS_SERVER = typeof window === "undefined";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
 
 // Use proxy URLs that go through Vercel's rewrite (works on both server and client)
@@ -42,7 +41,7 @@ async function callPRPC<T>(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
-    console.log(`[pRPC] Calling ${method} on ${endpoint}...`);
+    // Production: logging disabled
     
     const response = await fetch(`${endpoint}/rpc`, {
       method: "POST",
@@ -64,7 +63,7 @@ async function callPRPC<T>(
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error(`[pRPC] HTTP error from ${endpoint}: ${response.status} ${response.statusText}`);
+      // Production: logging disabled
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -74,20 +73,20 @@ async function callPRPC<T>(
       const errorMsg = typeof data.error === 'object' && 'message' in data.error 
         ? (data.error as { message: string }).message 
         : String(data.error);
-      console.error(`[pRPC] RPC error from ${endpoint}: ${errorMsg}`);
+      // Production: logging disabled
       throw new Error(errorMsg);
     }
 
-    console.log(`[pRPC] Success from ${endpoint}`);
+    // Production: logging disabled
     return data.result;
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error) {
       if (error.name === "AbortError") {
-        console.error(`[pRPC] Timeout from ${endpoint}`);
+        // Production: logging disabled
         throw new Error(`Request timeout after ${REQUEST_TIMEOUT / 1000}s`);
       }
-      console.error(`[pRPC] Error from ${endpoint}: ${error.message}`);
+      // Production: logging disabled
     }
     throw error;
   }
@@ -128,13 +127,12 @@ export async function fetchPodCredits(): Promise<Map<string, number>> {
       }
       cachedCredits = creditsMap;
       lastCreditsTime = now;
-      console.log(`Fetched ${creditsMap.size} pod credits`);
+      // Production: logging disabled
       return creditsMap;
     }
 
     throw new Error("Invalid pod credits response format");
-  } catch (error) {
-    console.warn("Failed to fetch pod credits:", error);
+  } catch {
     return cachedCredits; // Return stale cache if available
   }
 }
@@ -144,11 +142,11 @@ export async function fetchPods(): Promise<PNode[]> {
   
   // Return cached data if still valid
   if (cachedPods && now - lastFetchTime < CACHE_TTL) {
-    console.log("[pRPC] Returning cached pods data");
+    // Production: logging disabled
     return cachedPods;
   }
 
-  console.log(`[pRPC] Fetching fresh data from ${PRPC_ENDPOINTS.length} endpoints...`);
+  // Production: logging disabled
 
   // Try endpoints in parallel - first successful response wins
   const results = await Promise.allSettled(
@@ -165,7 +163,7 @@ export async function fetchPods(): Promise<PNode[]> {
   // Find first successful result
   for (const result of results) {
     if (result.status === "fulfilled" && result.value.pods.length > 0) {
-      console.log(`[pRPC] Success! Got ${result.value.pods.length} pNodes from ${result.value.endpoint}`);
+      // Production: logging disabled
       cachedPods = result.value.pods;
       lastFetchTime = now;
       return result.value.pods;
@@ -178,11 +176,11 @@ export async function fetchPods(): Promise<PNode[]> {
     .map((r) => r.reason?.message || String(r.reason))
     .slice(0, 3); // Only show first 3 errors
 
-  console.error(`[pRPC] All ${PRPC_ENDPOINTS.length} endpoints failed. Sample errors: ${errors.join("; ")}`);
+  // All endpoints failed - throw with error details
 
   // If all endpoints fail but we have cached data, return it
   if (cachedPods) {
-    console.warn("[pRPC] All endpoints failed, returning stale cache");
+    // Production: logging disabled
     return cachedPods;
   }
 

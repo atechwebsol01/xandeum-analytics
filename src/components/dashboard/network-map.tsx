@@ -56,8 +56,8 @@ export function NetworkMap({ nodes, isLoading }: NetworkMapProps) {
       try {
         const results = await fetchBatchGeoLocations(uniqueIps);
         setGeoData(results);
-      } catch (error) {
-        console.error("Failed to fetch geolocation data:", error);
+      } catch {
+        // Geolocation fetch failed silently
       } finally {
         setIsLoadingGeo(false);
       }

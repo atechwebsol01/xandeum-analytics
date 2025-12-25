@@ -83,7 +83,7 @@ export async function fetchPodsClientSide(): Promise<PNode[]> {
 
   for (const result of results) {
     if (result.status === "fulfilled" && result.value.pods.length > 0) {
-      console.log(`[Client pRPC] Got ${result.value.pods.length} pods from ${result.value.endpoint}`);
+      // Production: logging disabled
       return result.value.pods;
     }
   }
@@ -117,13 +117,12 @@ export async function fetchPodCreditsClientSide(): Promise<Map<string, number>> 
       for (const item of data.pods_credits) {
         creditsMap.set(item.pod_id, item.credits);
       }
-      console.log(`[Client] Got ${creditsMap.size} pod credits`);
+      // Production: logging disabled
       return creditsMap;
     }
 
     throw new Error("Invalid response format");
-  } catch (error) {
-    console.error("[Client] Failed to fetch pod credits:", error);
+  } catch {
     return new Map();
   }
 }
@@ -144,14 +143,12 @@ export async function fetchAllDataClientSide(): Promise<{
       creditsPromise,
     ]);
     return { pods, credits, source: "prpc" };
-  } catch (prpcError) {
-    console.warn("[Client] pRPC failed, using credits-only mode:", prpcError);
-    
+  } catch {
     // Fall back to credits-only
     const credits = await creditsPromise;
     
     // Create minimal pod data from credits
-    const pods: PNode[] = Array.from(credits.entries()).map(([pubkey, creditAmount]) => ({
+    const pods: PNode[] = Array.from(credits.entries()).map(([pubkey]) => ({
       pubkey,
       address: "unknown:0",
       version: "unknown",

@@ -77,8 +77,8 @@ export async function POST(request: Request) {
             }
           }
         }
-      } catch (error) {
-        console.warn("Batch geolocation failed:", error);
+      } catch {
+        // Batch request failed silently
       }
     }
 
@@ -88,8 +88,7 @@ export async function POST(request: Request) {
       cached: Object.keys(results).length - uncachedIps.filter(ip => results[ip]).length,
       fetched: uncachedIps.filter(ip => results[ip]).length,
     });
-  } catch (error) {
-    console.error("Geo API Error:", error);
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to fetch geolocation data" },
       { status: 500 }

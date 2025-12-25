@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { RefreshCw, AlertCircle, Keyboard, Award, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,48 @@ import { NetworkAlerts } from "@/components/dashboard/network-alerts";
 import { LiveIndicator } from "@/components/dashboard/live-indicator";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { NetworkMap } from "@/components/dashboard/network-map";
+import { TokenAnalytics } from "@/components/dashboard/token-analytics";
+import { StakingCalculator } from "@/components/dashboard/staking-calculator";
+import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
+import { NetworkTimeline } from "@/components/dashboard/network-timeline";
+import { GlobeWrapper } from "@/components/dashboard/globe-wrapper";
 import { usePNodes } from "@/hooks/use-pnodes";
+import { fetchBatchGeoLocations } from "@/lib/geolocation";
 import { cn, timeAgo, formatCredits } from "@/lib/utils";
 import Link from "next/link";
+import type { GeoLocation } from "@/types/pnode";
 
 export default function DashboardPage() {
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
     usePNodes();
+  const [geoData, setGeoData] = useState<Map<string, GeoLocation>>(new Map());
 
-  const nodes = data?.success ? data.data.nodes : [];
+  // Memoize nodes to prevent unnecessary recalculations
+  const nodes = useMemo(() => {
+    return data?.success ? data.data.nodes : [];
+  }, [data]);
   const stats = data?.success ? data.data.stats : null;
   const apiError = data?.success === false ? data?.error : null;
   const creditsCount = data?.success ? data.data.creditsCount : 0;
+
+  // Extract unique IPs from nodes for geolocation
+  const uniqueIps = useMemo(() => {
+    return [...new Set(nodes.map((n) => n.ip).filter(Boolean))];
+  }, [nodes]);
+
+  // Fetch geolocation data for all IPs
+  useEffect(() => {
+    if (uniqueIps.length === 0) return;
+    const fetchGeo = async () => {
+      try {
+        const results = await fetchBatchGeoLocations(uniqueIps);
+        setGeoData(results);
+      } catch {
+        // Geolocation fetch failed silently
+      }
+    };
+    fetchGeo();
+  }, [uniqueIps]);
 
   // Handle refresh from keyboard shortcut
   useEffect(() => {
@@ -131,9 +161,18 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Network Health + Alerts Row */}
+      {/* Token Analytics + Staking Calculator Row */}
       <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <NetworkHealth stats={stats} isLoading={isLoading} />
+        <TokenAnalytics />
+        <StakingCalculator />
+        <div className="md:col-span-2 lg:col-span-1">
+          <NetworkHealth stats={stats} isLoading={isLoading} />
+        </div>
+      </div>
+
+      {/* Network Health + Alerts + Timeline Row */}
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <NetworkTimeline />
         <div className="md:col-span-1 lg:col-span-2">
           <NetworkAlerts nodes={nodes} isLoading={isLoading} />
         </div>
@@ -142,7 +181,13 @@ export default function DashboardPage() {
       {/* Network Stats */}
       <NetworkStatsGrid stats={stats} isLoading={isLoading} />
 
-      {/* Global Map */}
+      {/* 3D Globe + Activity Heatmap Row */}
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+        <GlobeWrapper nodes={nodes} geoData={geoData} isLoading={isLoading} />
+        <ActivityHeatmap nodes={nodes} isLoading={isLoading} />
+      </div>
+
+      {/* 2D Map (Fallback/Alternative View) */}
       <NetworkMap nodes={nodes} isLoading={isLoading} />
 
       {/* Charts Row */}

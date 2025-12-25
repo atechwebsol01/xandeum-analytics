@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   RefreshCw,
   AlertCircle,
@@ -8,11 +9,19 @@ import {
   PieChart,
   Activity,
   Calendar,
+  Download,
+  GitCompare,
+  Search,
+  X,
+  FileJson,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { usePNodes } from "@/hooks/use-pnodes";
 import { cn, timeAgo, formatBytes } from "@/lib/utils";
 
@@ -77,6 +86,8 @@ function SimpleBarChart({
 
 export default function AnalyticsPage() {
   const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } = usePNodes();
+  const [compareNodes, setCompareNodes] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const nodes = data?.success ? data.data.nodes : [];
   const stats = data?.success ? data.data.stats : null;
@@ -281,11 +292,19 @@ export default function AnalyticsPage() {
 
       {/* Charts */}
       <Tabs defaultValue="performance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="uptime">Uptime</TabsTrigger>
           <TabsTrigger value="versions">Versions</TabsTrigger>
+          <TabsTrigger value="compare" className="gap-1">
+            <GitCompare className="h-3 w-3" />
+            Compare
+          </TabsTrigger>
+          <TabsTrigger value="export" className="gap-1">
+            <Download className="h-3 w-3" />
+            Export
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="performance" className="space-y-6">
@@ -419,6 +438,311 @@ export default function AnalyticsPage() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Node Comparison Tab */}
+        <TabsContent value="compare" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitCompare className="h-5 w-5" />
+                Node Comparison Tool
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Search and Add Nodes */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by pubkey..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Search Results */}
+              {searchQuery.length >= 3 && (
+                <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+                  {nodes
+                    .filter((n) => 
+                      n.pubkey.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                      !compareNodes.includes(n.pubkey)
+                    )
+                    .slice(0, 5)
+                    .map((node) => (
+                      <div
+                        key={node.pubkey}
+                        className="flex items-center justify-between p-2 hover:bg-muted/50 cursor-pointer"
+                        onClick={() => {
+                          if (compareNodes.length < 4) {
+                            setCompareNodes([...compareNodes, node.pubkey]);
+                            setSearchQuery("");
+                          }
+                        }}
+                      >
+                        <span className="font-mono text-sm truncate">
+                          {node.pubkey.slice(0, 8)}...{node.pubkey.slice(-6)}
+                        </span>
+                        <Badge variant={node.status === "online" ? "success" : node.status === "warning" ? "warning" : "error"}>
+                          {node.status}
+                        </Badge>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Selected Nodes for Comparison */}
+              {compareNodes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Selected nodes ({compareNodes.length}/4):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {compareNodes.map((pubkey) => (
+                      <Badge
+                        key={pubkey}
+                        variant="secondary"
+                        className="gap-1 cursor-pointer hover:bg-destructive/20"
+                        onClick={() => setCompareNodes(compareNodes.filter((p) => p !== pubkey))}
+                      >
+                        {pubkey.slice(0, 6)}...{pubkey.slice(-4)}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Comparison Table */}
+              {compareNodes.length >= 2 && (
+                <div className="border rounded-lg overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="p-3 text-left font-medium">Metric</th>
+                        {compareNodes.map((pubkey) => (
+                          <th key={pubkey} className="p-3 text-center font-medium">
+                            {pubkey.slice(0, 6)}...
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {[
+                        { label: "Status", key: "status" },
+                        { label: "X-Score", key: "xScore" },
+                        { label: "Credits", key: "credits" },
+                        { label: "Uptime", key: "uptime", format: (v: number) => `${Math.floor(v / 86400)}d` },
+                        { label: "Storage Used", key: "storage_used", format: (v: number) => formatBytes(v) },
+                        { label: "Storage Committed", key: "storage_committed", format: (v: number) => formatBytes(v) },
+                        { label: "Version", key: "version" },
+                        { label: "Public", key: "is_public", format: (v: boolean) => v ? "Yes" : "No" },
+                      ].map((metric) => (
+                        <tr key={metric.key} className="hover:bg-muted/30">
+                          <td className="p-3 font-medium">{metric.label}</td>
+                          {compareNodes.map((pubkey) => {
+                            const node = nodes.find((n) => n.pubkey === pubkey);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            const value = node ? (node as any)[metric.key] : "-";
+                            const displayValue = metric.format ? metric.format(value as never) : String(value);
+                            return (
+                              <td key={pubkey} className="p-3 text-center">
+                                {metric.key === "status" ? (
+                                  <Badge variant={value === "online" ? "success" : value === "warning" ? "warning" : "error"}>
+                                    {String(value)}
+                                  </Badge>
+                                ) : (
+                                  displayValue
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {compareNodes.length < 2 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <GitCompare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Select at least 2 nodes to compare</p>
+                  <p className="text-sm">Search by pubkey above (max 4 nodes)</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Export Tab */}
+        <TabsContent value="export" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5" />
+                  Export as CSV
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Download all pNode data in CSV format for spreadsheet analysis.
+                </p>
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => {
+                    const headers = ["Pubkey", "Status", "X-Score", "Credits", "Uptime (days)", "Storage Used", "Storage Committed", "Version", "Public", "IP"];
+                    const csvContent = [
+                      headers.join(","),
+                      ...nodes.map((n) =>
+                        [
+                          n.pubkey,
+                          n.status,
+                          n.xScore,
+                          n.credits,
+                          Math.floor(n.uptime / 86400),
+                          n.storage_used,
+                          n.storage_committed,
+                          n.version,
+                          n.is_public ? "Yes" : "No",
+                          n.ip,
+                        ].join(",")
+                      ),
+                    ].join("\n");
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `xandeum-nodes-${new Date().toISOString().split("T")[0]}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  disabled={nodes.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  Download CSV ({nodes.length} nodes)
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileJson className="h-5 w-5" />
+                  Export as JSON
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Download raw pNode data in JSON format for programmatic use.
+                </p>
+                <Button
+                  className="w-full gap-2"
+                  variant="outline"
+                  onClick={() => {
+                    const exportData = {
+                      exportedAt: new Date().toISOString(),
+                      networkStats: stats,
+                      totalNodes: nodes.length,
+                      nodes: nodes.map((n) => ({
+                        pubkey: n.pubkey,
+                        status: n.status,
+                        xScore: n.xScore,
+                        credits: n.credits,
+                        uptimeSeconds: n.uptime,
+                        uptimeDays: Math.floor(n.uptime / 86400),
+                        storageUsed: n.storage_used,
+                        storageCommitted: n.storage_committed,
+                        storageUsagePercent: n.storage_usage_percent,
+                        version: n.version,
+                        isPublic: n.is_public,
+                        ip: n.ip,
+                        lastSeen: n.last_seen_timestamp,
+                      })),
+                    };
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `xandeum-nodes-${new Date().toISOString().split("T")[0]}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  disabled={nodes.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  Download JSON ({nodes.length} nodes)
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Network Summary Report</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Generate a comprehensive network report with all statistics and distribution data.
+                </p>
+                <Button
+                  className="gap-2"
+                  variant="secondary"
+                  onClick={() => {
+                    const report = `
+XANDEUM NETWORK REPORT
+Generated: ${new Date().toLocaleString()}
+================================================
+
+NETWORK OVERVIEW
+----------------
+Total Nodes: ${nodes.length}
+Online: ${statusBreakdown.online} (${nodes.length > 0 ? ((statusBreakdown.online / nodes.length) * 100).toFixed(1) : 0}%)
+Warning: ${statusBreakdown.warning} (${nodes.length > 0 ? ((statusBreakdown.warning / nodes.length) * 100).toFixed(1) : 0}%)
+Offline: ${statusBreakdown.offline} (${nodes.length > 0 ? ((statusBreakdown.offline / nodes.length) * 100).toFixed(1) : 0}%)
+
+PERFORMANCE METRICS
+-------------------
+Average X-Score: ${stats?.averageXScore.toFixed(1) || 0}
+Average Credits: ${stats?.averageCredits.toFixed(0) || 0}
+Total Storage Committed: ${formatBytes(stats?.totalStorageCommitted || 0)}
+Total Storage Used: ${formatBytes(stats?.totalStorageUsed || 0)}
+
+X-SCORE DISTRIBUTION
+--------------------
+${scoreChartData.map((d) => `${d.range}: ${d.count} nodes`).join("\n")}
+
+UPTIME DISTRIBUTION
+-------------------
+${uptimeChartData.map((d) => `${d.bracket}: ${d.count} nodes`).join("\n")}
+
+VERSION DISTRIBUTION
+--------------------
+${versionChartData.slice(0, 10).map((d) => `${d.version}: ${d.count} nodes`).join("\n")}
+
+================================================
+Report generated by Xandeum Analytics
+https://xandeum-analytics-theta.vercel.app
+                    `.trim();
+                    const blob = new Blob([report], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `xandeum-report-${new Date().toISOString().split("T")[0]}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  disabled={nodes.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  Download Summary Report
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

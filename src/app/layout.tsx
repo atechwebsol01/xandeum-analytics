@@ -8,6 +8,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { AIChat } from "@/components/dashboard/ai-chat";
+import { PWARegister } from "@/components/pwa-register";
+import { OnboardingModal } from "@/components/onboarding-modal";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -112,6 +115,9 @@ export default function RootLayout({
                 <Footer />
               </div>
               <KeyboardShortcuts />
+              <AIChat />
+              <OnboardingModal />
+              <PWARegister />
               <Toaster
                 position="bottom-right"
                 toastOptions={{

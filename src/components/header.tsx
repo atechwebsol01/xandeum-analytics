@@ -12,6 +12,7 @@ import {
   X,
   Info,
   ArrowLeftRight,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ const navigation = [
   { name: "pNodes", href: "/pnodes", icon: Server },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Swap", href: "/swap", icon: ArrowLeftRight },
+  { name: "Docs", href: "/docs", icon: BookOpen },
   { name: "About", href: "/about", icon: Info },
 ];
 
