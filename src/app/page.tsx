@@ -1,313 +1,347 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { RefreshCw, AlertCircle, Keyboard, Award, Coins } from "lucide-react";
-import { toast } from "sonner";
+import { useMemo } from "react";
+import Link from "next/link";
+import { 
+  Server, 
+  Wifi, 
+  Activity, 
+  TrendingUp,
+  BarChart3,
+  Calculator,
+  Bot,
+  Globe,
+  ArrowRight,
+  Zap
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NetworkStatsGrid } from "@/components/dashboard/network-stats";
-import { VersionChart } from "@/components/dashboard/version-chart";
-import { PNodeTable } from "@/components/dashboard/pnode-table";
-import { NetworkHealth } from "@/components/dashboard/network-health";
-import { NetworkAlerts } from "@/components/dashboard/network-alerts";
-import { LiveIndicator } from "@/components/dashboard/live-indicator";
-import { QuickStats } from "@/components/dashboard/quick-stats";
-import { NetworkMap } from "@/components/dashboard/network-map";
-import { TokenAnalytics } from "@/components/dashboard/token-analytics";
-import { StakingCalculator } from "@/components/dashboard/staking-calculator";
-import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
-import { NetworkTimeline } from "@/components/dashboard/network-timeline";
 import { GlobeWrapper } from "@/components/dashboard/globe-wrapper";
+import { LiveIndicator } from "@/components/dashboard/live-indicator";
 import { usePNodes } from "@/hooks/use-pnodes";
-import { fetchBatchGeoLocations } from "@/lib/geolocation";
-import { cn, timeAgo, formatCredits } from "@/lib/utils";
-import Link from "next/link";
-import type { GeoLocation } from "@/types/pnode";
+import { useTokenPrice } from "@/hooks/use-token-price";
+import { cn, formatCredits } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const { data, isLoading, isError, refetch, isFetching, dataUpdatedAt } =
-    usePNodes();
-  const [geoData, setGeoData] = useState<Map<string, GeoLocation>>(new Map());
+  const { data, isLoading } = usePNodes();
+  const { data: tokenData, isLoading: tokenLoading } = useTokenPrice();
 
-  // Memoize nodes to prevent unnecessary recalculations
   const nodes = useMemo(() => {
     return data?.success ? data.data.nodes : [];
   }, [data]);
+  
   const stats = data?.success ? data.data.stats : null;
-  const apiError = data?.success === false ? data?.error : null;
-  const creditsCount = data?.success ? data.data.creditsCount : 0;
-
-  // Extract unique IPs from nodes for geolocation
-  const uniqueIps = useMemo(() => {
-    return [...new Set(nodes.map((n) => n.ip).filter(Boolean))];
-  }, [nodes]);
-
-  // Fetch geolocation data for all IPs
-  useEffect(() => {
-    if (uniqueIps.length === 0) return;
-    const fetchGeo = async () => {
-      try {
-        const results = await fetchBatchGeoLocations(uniqueIps);
-        setGeoData(results);
-      } catch {
-        // Geolocation fetch failed silently
-      }
-    };
-    fetchGeo();
-  }, [uniqueIps]);
-
-  // Handle refresh from keyboard shortcut
-  useEffect(() => {
-    const handleRefresh = () => {
-      refetch();
-      toast.success("Data refreshed!", {
-        description: "Latest network data has been fetched.",
-      });
-    };
-    
-    window.addEventListener("refresh-data", handleRefresh);
-    return () => window.removeEventListener("refresh-data", handleRefresh);
-  }, [refetch]);
-
-  const handleRefreshClick = () => {
-    refetch();
-    toast.success("Refreshing data...", {
-      description: "Fetching latest network information.",
-    });
-  };
+  
+  const totalNodes = stats?.totalNodes || 0;
+  const onlineNodes = stats?.onlineNodes || 0;
+  const healthScore = totalNodes > 0 
+    ? Math.round((onlineNodes / totalNodes) * 100 + (stats?.warningNodes || 0) / totalNodes * 50)
+    : 0;
+  const xandPrice = tokenData?.success ? tokenData.data.price : 0;
 
   return (
-    <div className="container py-4 sm:py-6 lg:py-8 px-3 sm:px-4 space-y-4 sm:space-y-6">
+    <div className="container py-6 sm:py-8 lg:py-12 px-4 space-y-8">
       {/* Hero Section */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
-              <span className="gradient-text">Xandeum</span> Network Dashboard
-            </h1>
-            {!isLoading && !isError && <LiveIndicator />}
-          </div>
-          <p className="text-muted-foreground">
-            Real-time analytics for Xandeum pNode network
-          </p>
-          {/* Quick Stats Bar */}
-          <QuickStats stats={stats} nodes={nodes} isLoading={isLoading} />
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center gap-3">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+            <span className="gradient-text">Xandeum</span> Analytics
+          </h1>
+          {!isLoading && <LiveIndicator />}
         </div>
-        <div className="flex items-center gap-2">
-          {dataUpdatedAt && !isError && (
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              Updated {timeAgo(Math.floor(dataUpdatedAt / 1000))}
-            </span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshClick}
-            disabled={isFetching}
-            className="gap-2"
-          >
-            <RefreshCw
-              className={cn("h-4 w-4", isFetching && "animate-spin")}
-            />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toast.info("Press ? for keyboard shortcuts")}
-            className="gap-2 hidden sm:flex"
-          >
-            <Keyboard className="h-4 w-4" />
-          </Button>
-        </div>
+        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          Real-time monitoring for the Xandeum decentralized storage network
+        </p>
       </div>
 
-      {/* Live Data Banner */}
-      {!isError && !isLoading && nodes.length > 0 && (
-        <Card className="border-emerald-500/50 bg-emerald-500/5">
-          <CardContent className="flex items-center gap-3 py-4">
-            <Coins className="h-5 w-5 text-emerald-500 shrink-0" />
-            <div className="flex-1">
-              <p className="font-medium text-emerald-500">
-                Live Network Data
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Connected to Xandeum pRPC network. Tracking {nodes.length} pNodes with {creditsCount} pod credits records.
-              </p>
+      {/* Hero Stats - 4 Key Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Nodes */}
+        <Card className="relative overflow-hidden group hover:shadow-lg transition-all">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 shadow-lg">
+                <Server className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total pNodes</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-20" />
+                ) : (
+                  <p className="text-3xl font-bold">{totalNodes}</p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Error State */}
-      {(isError || apiError) && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="flex items-center gap-3 py-4">
-            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-            <div className="flex-1">
-              <p className="font-medium text-destructive">
-                Failed to load pNode data
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {apiError || "Unable to connect to Xandeum pRPC endpoints."}
-              </p>
+        {/* Online Nodes */}
+        <Card className="relative overflow-hidden group hover:shadow-lg transition-all">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-green-600 shadow-lg">
+                <Wifi className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Online</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-20" />
+                ) : (
+                  <p className="text-3xl font-bold text-emerald-500">{onlineNodes}</p>
+                )}
+              </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              Retry
-            </Button>
           </CardContent>
         </Card>
-      )}
 
-      {/* Token Analytics + Staking Calculator Row */}
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <TokenAnalytics />
-        <StakingCalculator />
-        <div className="md:col-span-2 lg:col-span-1">
-          <NetworkHealth stats={stats} isLoading={isLoading} />
-        </div>
+        {/* Health Score */}
+        <Card className="relative overflow-hidden group hover:shadow-lg transition-all">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 shadow-lg">
+                <Activity className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Health Score</p>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-20" />
+                ) : (
+                  <p className={cn(
+                    "text-3xl font-bold",
+                    healthScore >= 80 ? "text-emerald-500" :
+                    healthScore >= 50 ? "text-yellow-500" : "text-red-500"
+                  )}>
+                    {healthScore}%
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* XAND Price */}
+        <Card className="relative overflow-hidden group hover:shadow-lg transition-all">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-600 to-yellow-600 shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">XAND Price</p>
+                {tokenLoading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <p className="text-3xl font-bold text-amber-500">
+                    ${xandPrice.toFixed(4)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Network Health + Alerts + Timeline Row */}
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <NetworkTimeline />
-        <div className="md:col-span-1 lg:col-span-2">
-          <NetworkAlerts nodes={nodes} isLoading={isLoading} />
-        </div>
-      </div>
-
-      {/* Network Stats */}
-      <NetworkStatsGrid stats={stats} isLoading={isLoading} />
-
-      {/* 3D Globe + Activity Heatmap Row */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        <GlobeWrapper nodes={nodes} geoData={geoData} isLoading={isLoading} />
-        <ActivityHeatmap nodes={nodes} isLoading={isLoading} />
-      </div>
-
-      {/* 2D Map (Fallback/Alternative View) */}
-      <NetworkMap nodes={nodes} isLoading={isLoading} />
-
-      {/* Charts Row */}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-        {/* Only render chart when data is fully loaded to avoid Recharts null errors */}
-        {!isLoading && stats?.versionDistribution ? (
-          <VersionChart
-            data={stats.versionDistribution}
-            isLoading={false}
-          />
-        ) : (
-          <VersionChart
-            data={{}}
-            isLoading={true}
-          />
-        )}
-        
-        {/* Top Performers by Credits */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-yellow-500" />
-                Top Pod Credits
-              </CardTitle>
+      {/* 3D Globe - Hero Visualization */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="relative">
+            <GlobeWrapper nodes={nodes} geoData={new Map()} isLoading={isLoading} />
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+              <Badge variant="secondary" className="bg-background/80 backdrop-blur">
+                <Globe className="h-3 w-3 mr-1" />
+                Global Node Distribution
+              </Badge>
               <Link href="/pnodes">
-                <Button variant="ghost" size="sm" className="text-xs">
-                  View All →
+                <Button size="sm" variant="secondary" className="bg-background/80 backdrop-blur">
+                  Explore All Nodes
+                  <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
             </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
-                ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Access Cards */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Network Analytics */}
+        <Link href="/analytics" className="group">
+          <Card className="h-full hover:shadow-lg hover:border-violet-500/50 transition-all cursor-pointer">
+            <CardContent className="pt-6 space-y-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 w-fit shadow-lg group-hover:scale-110 transition-transform">
+                <BarChart3 className="h-6 w-6 text-white" />
               </div>
-            ) : (
-              <div className="space-y-2">
-                {nodes
-                  .sort((a, b) => b.credits - a.credits)
-                  .slice(0, 5)
-                  .map((node, index) => (
-                    <Link
-                      key={node.pubkey}
-                      href={`/pnodes/${node.pubkey}`}
-                      className="block"
-                    >
-                      <div className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-muted/50 hover:bg-muted transition-all hover:scale-[1.01] cursor-pointer">
-                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              "flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full font-bold text-xs sm:text-sm transition-transform shrink-0",
-                              index === 0 &&
-                                "bg-yellow-500/10 text-yellow-500 ring-2 ring-yellow-500/20",
-                              index === 1 &&
-                                "bg-gray-400/10 text-gray-400 ring-2 ring-gray-400/20",
-                              index === 2 &&
-                                "bg-orange-500/10 text-orange-500 ring-2 ring-orange-500/20",
-                              index > 2 && "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
+              <div>
+                <h3 className="font-semibold text-lg group-hover:text-violet-500 transition-colors">
+                  Network Analytics
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Version distribution, storage stats, geographic breakdown
+                </p>
+              </div>
+              <div className="flex items-center text-sm text-violet-500 font-medium">
+                View Details
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Token Analytics */}
+        <Link href="/analytics#token" className="group">
+          <Card className="h-full hover:shadow-lg hover:border-amber-500/50 transition-all cursor-pointer">
+            <CardContent className="pt-6 space-y-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-amber-600 to-yellow-600 w-fit shadow-lg group-hover:scale-110 transition-transform">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg group-hover:text-amber-500 transition-colors">
+                  Token Analytics
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  XAND price, market cap, liquidity, trading volume
+                </p>
+              </div>
+              <div className="flex items-center text-sm text-amber-500 font-medium">
+                View Details
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Staking Calculator */}
+        <Link href="/analytics#staking" className="group">
+          <Card className="h-full hover:shadow-lg hover:border-emerald-500/50 transition-all cursor-pointer">
+            <CardContent className="pt-6 space-y-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-green-600 w-fit shadow-lg group-hover:scale-110 transition-transform">
+                <Calculator className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg group-hover:text-emerald-500 transition-colors">
+                  Staking Calculator
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Calculate rewards, APY tiers, lock period bonuses
+                </p>
+              </div>
+              <div className="flex items-center text-sm text-emerald-500 font-medium">
+                Calculate Now
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* AI Assistant */}
+        <Link href="/analytics#chat" className="group">
+          <Card className="h-full hover:shadow-lg hover:border-blue-500/50 transition-all cursor-pointer">
+            <CardContent className="pt-6 space-y-4">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 w-fit shadow-lg group-hover:scale-110 transition-transform">
+                <Bot className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg group-hover:text-blue-500 transition-colors">
+                  AI Assistant
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Ask questions about Xandeum, get instant answers
+                </p>
+              </div>
+              <div className="flex items-center text-sm text-blue-500 font-medium">
+                Start Chat
+                <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Top Performers Preview */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-500" />
+              <h3 className="font-semibold text-lg">Top Performers</h3>
+            </div>
+            <Link href="/pnodes">
+              <Button variant="ghost" size="sm">
+                View All
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+          
+          {isLoading ? (
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-3 gap-4">
+              {nodes
+                .sort((a, b) => b.credits - a.credits)
+                .slice(0, 3)
+                .map((node, index) => (
+                  <Link key={node.pubkey} href={`/pnodes/${node.pubkey}`}>
+                    <Card className={cn(
+                      "hover:shadow-md transition-all cursor-pointer",
+                      index === 0 && "border-yellow-500/50 bg-yellow-500/5",
+                      index === 1 && "border-gray-400/50 bg-gray-400/5",
+                      index === 2 && "border-orange-500/50 bg-orange-500/5"
+                    )}>
+                      <CardContent className="pt-4 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "text-2xl",
+                            index === 0 && "text-yellow-500",
+                            index === 1 && "text-gray-400",
+                            index === 2 && "text-orange-500"
+                          )}>
+                            {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
                           </div>
-                          <div className="min-w-0">
-                            <code className="text-xs sm:text-sm font-mono truncate block">
-                              {node.pubkey.slice(0, 6)}...{node.pubkey.slice(-4)}
+                          <div className="flex-1 min-w-0">
+                            <code className="text-sm font-mono truncate block">
+                              {node.pubkey.slice(0, 8)}...{node.pubkey.slice(-4)}
                             </code>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              v{node.version} • {node.is_public ? "Public" : "Private"}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={node.status === "online" ? "success" : "warning"} className="text-xs">
+                                {node.status}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">v{node.version}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                          <Badge
-                            variant={
-                              node.status === "online"
-                                ? "success"
-                                : node.status === "warning"
-                                ? "warning"
-                                : "error"
-                            }
-                            className="hidden md:flex text-[10px] sm:text-xs"
-                          >
-                            {node.status}
-                          </Badge>
-                          <div
-                            className={cn(
-                              "flex h-8 w-auto px-2 sm:h-10 items-center justify-center rounded-lg font-bold text-xs sm:text-sm",
-                              node.credits >= 40000
-                                ? "bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20"
-                                : node.credits >= 20000
-                                ? "bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/20"
-                                : node.credits >= 10000
-                                ? "bg-yellow-500/10 text-yellow-500 ring-1 ring-yellow-500/20"
-                                : "bg-orange-500/10 text-orange-500 ring-1 ring-orange-500/20"
-                            )}
-                          >
+                          <div className={cn(
+                            "text-lg font-bold",
+                            node.credits >= 40000 ? "text-emerald-500" :
+                            node.credits >= 20000 ? "text-blue-500" :
+                            "text-yellow-500"
+                          )}>
                             {formatCredits(node.credits)}
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* pNode Table */}
-      <PNodeTable nodes={nodes} isLoading={isLoading} />
-
-      {/* Footer hint */}
-      <div className="text-center text-sm text-muted-foreground py-4">
-        <span className="hidden sm:inline">
-          Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">?</kbd> for keyboard shortcuts
-        </span>
+      {/* Footer */}
+      <div className="text-center text-sm text-muted-foreground py-4 border-t">
+        <p>
+          Powered by <span className="font-semibold gradient-text">Xandeum</span> pRPC Network
+        </p>
       </div>
     </div>
   );

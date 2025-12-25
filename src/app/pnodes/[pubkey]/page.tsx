@@ -16,7 +16,6 @@ import {
   Activity,
   TrendingUp,
   Zap,
-  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,12 +50,6 @@ interface NodeSnapshot {
   storage_used: number;
 }
 
-interface HeatmapData {
-  hour: number;
-  day_of_week: number;
-  activity_count: number;
-}
-
 export default function PNodeDetailPage({
   params,
 }: {
@@ -66,7 +59,6 @@ export default function PNodeDetailPage({
   const { data: node, isLoading, refetch, isFetching } = usePNode(pubkey);
   const [copied, setCopied] = useState(false);
   const [nodeHistory, setNodeHistory] = useState<NodeSnapshot[]>([]);
-  const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
   // Fetch node historical data
@@ -77,21 +69,14 @@ export default function PNodeDetailPage({
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const [snapshotsRes, heatmapRes] = await Promise.all([
-          supabase
-            .from("node_snapshots")
-            .select("created_at, status, credits, xscore, uptime, storage_used")
-            .eq("pubkey", pubkey)
-            .gte("created_at", sevenDaysAgo.toISOString())
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("activity_heatmap")
-            .select("hour, day_of_week, activity_count")
-            .eq("pubkey", pubkey),
-        ]);
+        const { data } = await supabase
+          .from("node_snapshots")
+          .select("created_at, status, credits, xscore, uptime, storage_used")
+          .eq("pubkey", pubkey)
+          .gte("created_at", sevenDaysAgo.toISOString())
+          .order("created_at", { ascending: true });
 
-        if (snapshotsRes.data) setNodeHistory(snapshotsRes.data);
-        if (heatmapRes.data) setHeatmapData(heatmapRes.data);
+        if (data) setNodeHistory(data);
       } catch {
         // Silent fail
       } finally {

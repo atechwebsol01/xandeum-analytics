@@ -17,7 +17,6 @@ export function NetworkTimeline() {
   
   const responseData = data?.success ? data.data : null;
   const stats = responseData?.stats;
-  const nodes = responseData?.nodes || [];
   
   const totalNodes = stats?.totalNodes || 0;
   const onlineNodes = stats?.onlineNodes || 0;

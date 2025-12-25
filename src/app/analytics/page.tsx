@@ -15,6 +15,9 @@ import {
   X,
   FileJson,
   FileSpreadsheet,
+  Coins,
+  Calculator,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +26,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { usePNodes } from "@/hooks/use-pnodes";
+import { TokenAnalytics } from "@/components/dashboard/token-analytics";
+import { StakingCalculator } from "@/components/dashboard/staking-calculator";
+import { AIChat } from "@/components/dashboard/ai-chat";
 import { cn, timeAgo, formatBytes } from "@/lib/utils";
 
 const COLORS = [
@@ -288,6 +294,39 @@ export default function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Token Analytics Section */}
+      <div id="token" className="scroll-mt-20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-amber-600 to-yellow-600">
+            <Coins className="h-5 w-5 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold">Token Analytics</h2>
+        </div>
+        <TokenAnalytics />
+      </div>
+
+      {/* Staking Calculator Section */}
+      <div id="staking" className="scroll-mt-20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-600 to-green-600">
+            <Calculator className="h-5 w-5 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold">Staking Calculator</h2>
+        </div>
+        <StakingCalculator />
+      </div>
+
+      {/* AI Chat Section */}
+      <div id="chat" className="scroll-mt-20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600">
+            <Bot className="h-5 w-5 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold">AI Assistant</h2>
+        </div>
+        <AIChat />
       </div>
 
       {/* Charts */}
