@@ -449,129 +449,340 @@ export default function PNodeDetailPage({
         </div>
       )}
 
-      {/* Status History Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Status History (7 Days)
-          </CardTitle>
-          <CardDescription>Node status and performance over time</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {historyLoading ? (
-            <Skeleton className="h-32 w-full" />
-          ) : nodeHistory.length > 0 ? (
-            <div className="space-y-4">
-              {/* Status Timeline */}
-              <div className="flex gap-1 h-8">
-                {nodeHistory.slice(-48).map((snapshot, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex-1 rounded-sm transition-all hover:scale-y-125",
-                      snapshot.status === "online" ? "bg-emerald-500" :
-                      snapshot.status === "warning" ? "bg-yellow-500" : "bg-red-500"
-                    )}
-                    title={`${new Date(snapshot.created_at).toLocaleString()} - ${snapshot.status}`}
+      {/* Node Analysis Section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Status Distribution Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Status Distribution
+            </CardTitle>
+            <CardDescription>Node reliability breakdown</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {historyLoading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : (() => {
+              const onlineCount = nodeHistory.filter(s => s.status === "online").length || (node.status === "online" ? 1 : 0);
+              const warningCount = nodeHistory.filter(s => s.status === "warning").length || (node.status === "warning" ? 1 : 0);
+              const offlineCount = nodeHistory.filter(s => s.status === "offline").length || (node.status === "offline" ? 1 : 0);
+              const total = onlineCount + warningCount + offlineCount || 1;
+              const onlinePct = (onlineCount / total) * 100;
+              const warningPct = (warningCount / total) * 100;
+              const offlinePct = (offlineCount / total) * 100;
+              
+              return (
+                <div className="flex items-center gap-8">
+                  {/* Donut Chart */}
+                  <div className="relative w-40 h-40">
+                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                      {/* Background circle */}
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="12" className="text-muted/20" />
+                      {/* Online segment */}
+                      <circle
+                        cx="50" cy="50" r="40" fill="none"
+                        stroke="#10b981" strokeWidth="12"
+                        strokeDasharray={`${onlinePct * 2.51} 251`}
+                        strokeLinecap="round"
+                      />
+                      {/* Warning segment */}
+                      <circle
+                        cx="50" cy="50" r="40" fill="none"
+                        stroke="#eab308" strokeWidth="12"
+                        strokeDasharray={`${warningPct * 2.51} 251`}
+                        strokeDashoffset={`${-onlinePct * 2.51}`}
+                        strokeLinecap="round"
+                      />
+                      {/* Offline segment */}
+                      <circle
+                        cx="50" cy="50" r="40" fill="none"
+                        stroke="#ef4444" strokeWidth="12"
+                        strokeDasharray={`${offlinePct * 2.51} 251`}
+                        strokeDashoffset={`${-(onlinePct + warningPct) * 2.51}`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl font-bold">{onlinePct.toFixed(0)}%</span>
+                      <span className="text-xs text-muted-foreground">Uptime</span>
+                    </div>
+                  </div>
+                  
+                  {/* Legend with values */}
+                  <div className="space-y-4 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-emerald-500" />
+                        <span className="text-sm">Online</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-emerald-500">{onlinePct.toFixed(1)}%</span>
+                        <span className="text-xs text-muted-foreground ml-2">({onlineCount} checks)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
+                        <span className="text-sm">Warning</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-yellow-500">{warningPct.toFixed(1)}%</span>
+                        <span className="text-xs text-muted-foreground ml-2">({warningCount} checks)</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-red-500" />
+                        <span className="text-sm">Offline</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-red-500">{offlinePct.toFixed(1)}%</span>
+                        <span className="text-xs text-muted-foreground ml-2">({offlineCount} checks)</span>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t text-xs text-muted-foreground">
+                      Based on {total} status checks
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Storage Usage Gauge */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HardDrive className="h-5 w-5" />
+              Storage Analysis
+            </CardTitle>
+            <CardDescription>Committed vs used storage breakdown</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-8">
+              {/* Gauge */}
+              <div className="relative w-40 h-40">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  {/* Background arc */}
+                  <path
+                    d="M 10 70 A 40 40 0 1 1 90 70"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="10"
+                    className="text-muted/20"
+                    strokeLinecap="round"
                   />
-                ))}
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>7 days ago</span>
-                <span>Now</span>
+                  {/* Filled arc based on usage */}
+                  <path
+                    d="M 10 70 A 40 40 0 1 1 90 70"
+                    fill="none"
+                    stroke={node.storage_usage_percent > 80 ? "#ef4444" : node.storage_usage_percent > 50 ? "#eab308" : "#10b981"}
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${Math.min(node.storage_usage_percent, 100) * 2.2} 220`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
+                  <span className="text-3xl font-bold">{node.storage_usage_percent.toFixed(1)}%</span>
+                  <span className="text-xs text-muted-foreground">Used</span>
+                </div>
               </div>
               
-              {/* Credits Trend */}
-              <div className="pt-4 border-t">
-                <p className="text-sm font-medium mb-2">Credits Trend</p>
-                <div className="flex items-end gap-1 h-20">
-                  {nodeHistory.slice(-24).map((snapshot, i) => {
-                    const maxCredits = Math.max(...nodeHistory.slice(-24).map(s => s.credits), 1);
-                    const height = (snapshot.credits / maxCredits) * 100;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 bg-gradient-to-t from-violet-600 to-violet-400 rounded-t transition-all hover:from-violet-500 hover:to-violet-300"
-                        style={{ height: `${Math.max(height, 5)}%` }}
-                        title={`${snapshot.credits.toLocaleString()} credits`}
-                      />
-                    );
-                  })}
+              {/* Storage Details */}
+              <div className="space-y-4 flex-1">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">Committed</span>
+                    <span className="font-bold">{formatBytes(node.storage_committed)}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-violet-500 rounded-full" style={{ width: "100%" }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">Used</span>
+                    <span className="font-bold">{formatBytes(node.storage_used)}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full rounded-full",
+                        node.storage_usage_percent > 80 ? "bg-red-500" : 
+                        node.storage_usage_percent > 50 ? "bg-yellow-500" : "bg-emerald-500"
+                      )} 
+                      style={{ width: `${Math.min(node.storage_usage_percent, 100)}%` }} 
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-muted-foreground">Available</span>
+                    <span className="font-bold">{formatBytes(node.storage_committed - node.storage_used)}</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${100 - node.storage_usage_percent}%` }} />
+                  </div>
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="h-32 flex flex-col items-center justify-center text-muted-foreground">
-              <Calendar className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">No historical data yet</p>
-              <p className="text-xs">Data will appear as snapshots are collected</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Performance Score Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            X-Score Breakdown
+          </CardTitle>
+          <CardDescription>Detailed performance metrics that make up the X-Score</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+            {/* Credits Score */}
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border border-amber-500/20">
+              <div className="text-3xl font-bold text-amber-500">
+                {Math.min(35, Math.round(node.credits / 1000 * 35))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">/ 35 max</div>
+              <div className="text-sm font-medium mt-2">Credits</div>
+              <div className="text-xs text-muted-foreground">{node.credits.toLocaleString()} credits</div>
             </div>
-          )}
+            
+            {/* Uptime Score */}
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+              <div className="text-3xl font-bold text-blue-500">
+                {Math.min(25, Math.round(node.uptime / 86400 * 5))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">/ 25 max</div>
+              <div className="text-sm font-medium mt-2">Uptime</div>
+              <div className="text-xs text-muted-foreground">{formatUptime(node.uptime)}</div>
+            </div>
+            
+            {/* Status Score */}
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
+              <div className="text-3xl font-bold text-emerald-500">
+                {node.status === "online" ? 25 : node.status === "warning" ? 15 : 0}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">/ 25 max</div>
+              <div className="text-sm font-medium mt-2">Status</div>
+              <div className="text-xs text-muted-foreground capitalize">{node.status}</div>
+            </div>
+            
+            {/* Storage Score */}
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20">
+              <div className="text-3xl font-bold text-violet-500">
+                {Math.min(10, Math.round(node.storage_committed / 1e12 * 10))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">/ 10 max</div>
+              <div className="text-sm font-medium mt-2">Storage</div>
+              <div className="text-xs text-muted-foreground">{formatBytes(node.storage_committed)}</div>
+            </div>
+            
+            {/* Public Bonus */}
+            <div className="text-center p-4 rounded-xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-pink-500/20">
+              <div className="text-3xl font-bold text-pink-500">
+                {node.is_public ? 5 : 0}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">/ 5 max</div>
+              <div className="text-sm font-medium mt-2">Public</div>
+              <div className="text-xs text-muted-foreground">{node.is_public ? "Yes" : "No"}</div>
+            </div>
+          </div>
+          
+          {/* Total Score Bar */}
+          <div className="mt-6 p-4 rounded-xl bg-gradient-to-r from-violet-500/10 via-blue-500/10 to-emerald-500/10 border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium">Total X-Score</span>
+              <span className="text-2xl font-bold">{node.xScore}/100</span>
+            </div>
+            <div className="h-4 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-emerald-500 transition-all duration-500"
+                style={{ width: `${node.xScore}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+              <span>Poor (0-25)</span>
+              <span>Fair (26-50)</span>
+              <span>Good (51-75)</span>
+              <span>Excellent (76-100)</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Activity Heatmap */}
+      {/* Credits & Reputation */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Activity Heatmap
+            <Coins className="h-5 w-5 text-yellow-500" />
+            Credits & Reputation Analysis
           </CardTitle>
-          <CardDescription>Node activity patterns by hour and day</CardDescription>
+          <CardDescription>Understanding your node&apos;s earning potential</CardDescription>
         </CardHeader>
         <CardContent>
-          {historyLoading ? (
-            <Skeleton className="h-40 w-full" />
-          ) : heatmapData.length > 0 ? (
-            <div className="space-y-2">
-              <div className="grid grid-cols-[auto_repeat(24,1fr)] gap-1 text-xs">
-                <div className="w-8" />
-                {Array.from({ length: 24 }, (_, i) => (
-                  <div key={i} className="text-center text-muted-foreground">
-                    {i % 6 === 0 ? `${i}h` : ""}
-                  </div>
-                ))}
-              </div>
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, dayIndex) => (
-                <div key={day} className="grid grid-cols-[auto_repeat(24,1fr)] gap-1">
-                  <div className="w-8 text-xs text-muted-foreground flex items-center">{day}</div>
-                  {Array.from({ length: 24 }, (_, hour) => {
-                    const activity = heatmapData.find(h => h.day_of_week === dayIndex && h.hour === hour);
-                    const intensity = activity ? Math.min(activity.activity_count / 10, 1) : 0;
-                    return (
-                      <div
-                        key={hour}
-                        className={cn(
-                          "aspect-square rounded-sm transition-all",
-                          intensity === 0 ? "bg-muted" :
-                          intensity < 0.3 ? "bg-emerald-900/50" :
-                          intensity < 0.6 ? "bg-emerald-600/70" : "bg-emerald-500"
-                        )}
-                        title={`${day} ${hour}:00 - ${activity?.activity_count || 0} activities`}
-                      />
-                    );
-                  })}
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="p-6 rounded-xl bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 text-center">
+              <div className="text-4xl font-bold text-yellow-500">{formatCredits(node.credits)}</div>
+              <div className="text-sm text-muted-foreground mt-1">Current Credits</div>
+              <div className="mt-4 p-2 rounded-lg bg-background/50">
+                <div className="text-xs text-muted-foreground">Reputation Level</div>
+                <div className={cn(
+                  "font-bold mt-1",
+                  node.credits >= 40000 ? "text-emerald-500" :
+                  node.credits >= 20000 ? "text-blue-500" :
+                  node.credits >= 10000 ? "text-yellow-500" : "text-orange-500"
+                )}>
+                  {getCreditsLevel(node.credits)}
                 </div>
-              ))}
-              <div className="flex items-center justify-end gap-2 pt-2 text-xs text-muted-foreground">
-                <span>Less</span>
-                <div className="flex gap-1">
-                  <div className="w-3 h-3 rounded-sm bg-muted" />
-                  <div className="w-3 h-3 rounded-sm bg-emerald-900/50" />
-                  <div className="w-3 h-3 rounded-sm bg-emerald-600/70" />
-                  <div className="w-3 h-3 rounded-sm bg-emerald-500" />
-                </div>
-                <span>More</span>
               </div>
             </div>
-          ) : (
-            <div className="h-40 flex flex-col items-center justify-center text-muted-foreground">
-              <Calendar className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">No activity data yet</p>
-              <p className="text-xs">Heatmap will populate over time</p>
+            
+            <div className="p-6 rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
+              <div className="text-sm font-medium mb-4">How Credits Work</div>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5" />
+                  <span><strong>+1</strong> per successful heartbeat</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5" />
+                  <span><strong>-100</strong> for missed operations</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500 mt-1.5" />
+                  <span>Reset monthly (keep earning!)</span>
+                </div>
+              </div>
             </div>
-          )}
+            
+            <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+              <div className="text-sm font-medium mb-4">Reputation Tiers</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-emerald-500">Diamond</span>
+                  <span className="text-xs text-muted-foreground">40,000+</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-500">Platinum</span>
+                  <span className="text-xs text-muted-foreground">20,000+</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-yellow-500">Gold</span>
+                  <span className="text-xs text-muted-foreground">10,000+</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-orange-500">Bronze</span>
+                  <span className="text-xs text-muted-foreground">&lt; 10,000</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
