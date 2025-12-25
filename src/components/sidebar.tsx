@@ -224,6 +224,7 @@ export function Sidebar({ className }: SidebarProps) {
                           <Link
                             key={child.name}
                             href={child.href || "#"}
+                            data-tour={child.href?.replace("/", "") || child.name.toLowerCase().replace(/\s+/g, "-")}
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-all duration-200",
                               isActive(child.href)
@@ -247,6 +248,7 @@ export function Sidebar({ className }: SidebarProps) {
               ) : (
                 <Link
                   href={item.href || "#"}
+                  data-tour={item.href?.replace("/", "") || item.name.toLowerCase().replace(/\s+/g, "-")}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                     isActive(item.href)
